@@ -4,9 +4,9 @@ import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/utils/sound_player.dart';
 
-/// Interactive Counting Basket for one-to-one correspondence scaffold (V16)
+/// Interactive Counting Basket for one-to-one correspondence scaffold (v2.0 Soft Diorama)
 /// Rules:
-/// - Chunky rounded container in Category Angka Tint (#FDEBD7 / bevel #D68236)
+/// - Soft rounded toy container
 /// - NO live numerical counter (V16: never spoil the answer!)
 /// - Displays stacked visual objects as they are dropped
 /// - Tap item inside to undo/return it back
@@ -17,8 +17,8 @@ class CountingBasket extends StatelessWidget {
     required this.objectAsset,
     required this.onItemDropped,
     required this.onItemRemoved,
-    this.width = 130.0,
-    this.height = 130.0,
+    this.width = 110.0,
+    this.height = 90.0,
   });
 
   final Set<int> countedItemIds;
@@ -45,16 +45,16 @@ class CountingBasket extends StatelessWidget {
           height: height,
           padding: const EdgeInsets.all(AppSpacing.space8),
           decoration: BoxDecoration(
-            color: isHovered ? AppColors.numberPrimary.withValues(alpha: 0.3) : AppColors.numberTint,
-            borderRadius: AppSpacing.roundedLarge,
+            color: isHovered ? AppColors.numberTint : const Color(0xFFFDFBF7),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
             border: Border.all(
-              color: AppColors.numberPrimary,
-              width: isHovered ? 4.0 : 3.0,
+              color: isHovered ? AppColors.numberPrimary : AppColors.cardBorder,
+              width: isHovered ? 2.5 : 1.5,
             ),
             boxShadow: const [
               BoxShadow(
-                color: AppColors.numberBevel,
-                offset: Offset(0, AppSpacing.bevelNormal),
+                color: AppColors.cardBevel,
+                offset: Offset(0, 3.0),
                 blurRadius: 0,
               ),
             ],
@@ -62,7 +62,7 @@ class CountingBasket extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // 3D Clay Basket Image (Pinterest Toy Aesthetic)
+              // 3D Clay Basket Visual
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
                 child: Image.asset(
@@ -73,8 +73,8 @@ class CountingBasket extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) {
                     return Icon(
                       Icons.shopping_basket_rounded,
-                      size: 48.0,
-                      color: AppColors.numberBevel.withValues(alpha: 0.7),
+                      size: 40.0,
+                      color: AppColors.numberPrimary.withValues(alpha: 0.6),
                     );
                   },
                 ),
@@ -83,26 +83,26 @@ class CountingBasket extends StatelessWidget {
               // Subtle drop prompt when empty
               if (countedItemIds.isEmpty)
                 Positioned(
-                  bottom: 10.0,
+                  bottom: 4.0,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.85),
+                      color: Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
-                      border: Border.all(color: AppColors.numberPrimary, width: 1.5),
+                      border: Border.all(color: AppColors.cardBorder, width: 1.0),
                     ),
                     child: const Icon(
                       Icons.arrow_downward_rounded,
-                      size: 18.0,
-                      color: AppColors.numberBevel,
+                      size: 14.0,
+                      color: AppColors.numberPrimary,
                     ),
                   ),
                 ),
 
-              // Stacked Items (Without live numbers - V16)
+              // Stacked Items inside basket
               Wrap(
-                spacing: 4.0,
-                runSpacing: 4.0,
+                spacing: 3.0,
+                runSpacing: 3.0,
                 alignment: WrapAlignment.center,
                 children: [
                   for (final id in countedItemIds)
@@ -112,16 +112,19 @@ class CountingBasket extends StatelessWidget {
                         SoundPlayer.instance.playPop();
                       },
                       child: Container(
-                        width: 32.0,
-                        height: 32.0,
-                        padding: const EdgeInsets.all(2.0),
+                        width: 26.0,
+                        height: 26.0,
+                        padding: const EdgeInsets.all(1.0),
                         decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(
-                            color: AppColors.numberPrimary,
-                            width: 1.5,
-                          ),
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              offset: Offset(0, 1.0),
+                              blurRadius: 2.0,
+                            ),
+                          ],
                         ),
                         child: Image.asset(
                           objectAsset,
@@ -129,7 +132,7 @@ class CountingBasket extends StatelessWidget {
                           errorBuilder: (context, error, stackTrace) {
                             return const Icon(
                               Icons.eco_rounded,
-                              size: 18.0,
+                              size: 14.0,
                               color: AppColors.numberPrimary,
                             );
                           },

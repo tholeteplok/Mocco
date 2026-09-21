@@ -2,20 +2,23 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
+import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/sound_player.dart';
 import '../../../domain/entities/letter_entity.dart';
 import '../../../domain/services/letter_distractor_generator.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/buttons/chunky_button.dart';
+import '../../widgets/cards/chunky_card.dart';
 import '../../widgets/cards/flashcard_answer.dart';
+import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
 
-/// Audio-to-Letter Quiz Screen (Spec §1.3)
-/// Flow:
-/// 1. Audio prompt plays letter name or phonic sound
-/// 2. 4 Flashcard choices with research-backed distractors
-/// 3. Gentle feedback (visual joy when correct, soft retry when wrong)
+/// Audio-to-Letter Quiz Screen (Pinterest v2.0 Standard: Airy Clay & Playful Diorama)
+/// Features:
+/// - Symmetrical 1x4 horizontal answer choice row
+/// - Mint green (#2EC4B6) success highlight
+/// - Gamified dopamine loop with Mascot Celebration Banner + "[ Lanjut → ]" CTA
 class LetterQuizScreen extends StatefulWidget {
   const LetterQuizScreen({
     super.key,
@@ -58,7 +61,6 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
 
   void _loadNextQuestion() {
     setState(() {
-      // Pick a random letter from catalog
       final letterCatalog = LetterEntity.alphabet;
       _targetLetter = letterCatalog[(_currentStep * 3) % letterCatalog.length];
       _options = widget.generator.generateOptions(_targetLetter.char, isUppercase: true);
@@ -70,6 +72,20 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
         SoundPlayer.instance.playLetterName(_targetLetter.char);
       }
     });
+  }
+
+  void _advanceToNext() {
+    for (final timer in _activeTimers) {
+      timer.cancel();
+    }
+    _activeTimers.clear();
+
+    if (_currentStep < widget.totalSteps) {
+      setState(() => _currentStep++);
+      _loadNextQuestion();
+    } else {
+      widget.onCompleted?.call();
+    }
   }
 
   void _handleOptionTap(String option) {
@@ -85,13 +101,10 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
         if (mounted) SoundPlayer.instance.playPraise();
       }));
 
-      _activeTimers.add(Timer(const Duration(milliseconds: 1000), () {
-        if (!mounted) return;
-        if (_currentStep < widget.totalSteps) {
-          setState(() => _currentStep++);
-          _loadNextQuestion();
-        } else {
-          widget.onCompleted?.call();
+      // Auto-advance backup timer
+      _activeTimers.add(Timer(const Duration(milliseconds: 3200), () {
+        if (mounted && _isAnswerCorrect) {
+          _advanceToNext();
         }
       }));
     } else {
@@ -120,92 +133,132 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Audio prompt button to replay the question
-              AudioPromptButton(
-                primaryColor: AppColors.letterTint,
-                borderColor: AppColors.letterPrimary,
-                bevelColor: AppColors.letterBevel,
-                onPressed: () {
-                  SoundPlayer.instance.playLetterName(_targetLetter.char);
-                },
+              // Prompt Question Card (Pure White Surface)
+              ChunkyCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.space24,
+                  vertical: AppSpacing.space24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AudioPromptButton(
+                      primaryColor: AppColors.letterTint,
+                      borderColor: AppColors.letterPrimary,
+                      bevelColor: AppColors.letterBevel,
+                      onPressed: () {
+                        SoundPlayer.instance.playLetterName(_targetLetter.char);
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.space16),
+                    Text(
+                      'Pilih huruf yang kamu dengar!',
+                      style: AppTypography.uiHeading(
+                        fontSize: 18.0,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: AppSpacing.space32),
 
-              // 4 Flashcard Answer Choices (Category Huruf - Pastel Blue)
-              Wrap(
-                spacing: AppSpacing.cardGap,
-                runSpacing: AppSpacing.cardGap,
-                alignment: WrapAlignment.center,
+              const SizedBox(height: AppSpacing.space24),
+
+              // 4 Flashcard Answer Choices in 1x4 Symmetrical Horizontal Row
+              Row(
                 children: [
                   for (final option in _options)
-                    FlashcardAnswer(
-                      text: option,
-                      isSelected: _selectedLetter == option,
-                      primaryColor: _selectedLetter == option
-                          ? (_isAnswerCorrect
-                              ? AppColors.successBackground
-                              : AppColors.retryBackground)
-                          : AppColors.letterTint,
-                      borderColor: _selectedLetter == option
-                          ? (_isAnswerCorrect
-                              ? AppColors.successBevel
-                              : AppColors.retryBevel)
-                          : AppColors.letterPrimary,
-                      bevelColor: _selectedLetter == option
-                          ? (_isAnswerCorrect
-                              ? AppColors.successBevel
-                              : AppColors.retryBevel)
-                          : AppColors.letterBevel,
-                      onTap: () => _handleOptionTap(option),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: FlashcardAnswer(
+                          text: option,
+                          isSelected: _selectedLetter == option,
+                          isCorrect: _isAnswerCorrect && _selectedLetter == option,
+                          primaryColor: _selectedLetter == option
+                              ? (_isAnswerCorrect
+                                  ? AppColors.successBackground
+                                  : AppColors.retryBackground)
+                              : AppColors.cardSurface,
+                          borderColor: _selectedLetter == option
+                              ? (_isAnswerCorrect
+                                  ? AppColors.brandMintDark
+                                  : AppColors.retryBevel)
+                              : AppColors.cardBorder,
+                          bevelColor: _selectedLetter == option
+                              ? (_isAnswerCorrect
+                                  ? AppColors.brandMintDark
+                                  : AppColors.retryBevel)
+                              : AppColors.cardBevel,
+                          onTap: () => _handleOptionTap(option),
+                        ),
+                      ),
                     ),
                 ],
               ),
 
-              const SizedBox(height: AppSpacing.space32),
+              const SizedBox(height: AppSpacing.space20),
 
-              // Icon-Only Navigation Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Replay question
-                  ChunkyButton(
-                    icon: const Icon(
-                      Icons.replay_rounded,
-                      size: 32.0,
-                      color: AppColors.textPrimary,
-                    ),
-                    primaryColor: AppColors.letterTint,
-                    bevelColor: AppColors.letterBevel,
-                    onPressed: () {
-                      SoundPlayer.instance.playPop();
-                      setState(() => _selectedLetter = null);
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.space24),
-                  // Forward / Next
-                  ChunkyButton(
-                    icon: const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 32.0,
-                      color: AppColors.textPrimary,
-                    ),
-                    primaryColor: AppColors.letterPrimary,
-                    bevelColor: AppColors.letterBevel,
-                    onPressed: () {
-                      SoundPlayer.instance.playPop();
-                      if (_currentStep < widget.totalSteps) {
-                        setState(() => _currentStep++);
-                        _loadNextQuestion();
-                      } else {
-                        widget.onCompleted?.call();
-                      }
-                    },
-                  ),
-                ],
+              // Bottom Section: Celebration Banner OR Navigation Controls
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.25),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: _isAnswerCorrect
+                    ? CelebrationBanner(
+                        key: const ValueKey('celebration'),
+                        title: 'Hebat Sekali!',
+                        subtitle: 'Pilihan hurufmu tepat!',
+                        onNextPressed: _advanceToNext,
+                      )
+                    : Row(
+                        key: const ValueKey('navigation'),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Replay question
+                          ChunkyButton(
+                            icon: const Icon(
+                              Icons.replay_rounded,
+                              size: 28.0,
+                              color: AppColors.textPrimary,
+                            ),
+                            primaryColor: AppColors.cardSurface,
+                            bevelColor: AppColors.cardBevel,
+                            onPressed: () {
+                              SoundPlayer.instance.playPop();
+                              setState(() => _selectedLetter = null);
+                            },
+                          ),
+                          const SizedBox(width: AppSpacing.space24),
+                          // Forward / Next
+                          ChunkyButton(
+                            icon: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 28.0,
+                              color: AppColors.textWhite,
+                            ),
+                            primaryColor: AppColors.brandMint,
+                            bevelColor: AppColors.brandMintDark,
+                            onPressed: () {
+                              SoundPlayer.instance.playPop();
+                              _advanceToNext();
+                            },
+                          ),
+                        ],
+                      ),
               ),
+              const SizedBox(height: AppSpacing.space12),
             ],
           ),
         ),

@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../core/tokens/app_colors.dart';
-import '../../../core/tokens/app_spacing.dart';
 
-/// Single draggable fruit/vegetable item for counting (V16, V30)
+/// Single Floating Fruit/Vegetable Item (Pinterest v2.0 Standard)
 /// Features:
-/// - 1:1 uniform dimensions
-/// - Chunky outline stiker look
-/// - Drag-and-drop support into CountingBasket
-class CountingObjectItem extends StatelessWidget {
+/// - Pure transparent 3D clay presentation (zero enclosing box)
+/// - Soft contact shadow on the floor for realistic diorama depth
+/// - Interactive tactile bounce upon touch with visual count badge
+class CountingObjectItem extends StatefulWidget {
   const CountingObjectItem({
     super.key,
     required this.id,
     required this.objectAsset,
-    this.size = 64.0,
+    this.size = 68.0,
     this.isCounted = false,
     this.onTap,
   });
@@ -24,73 +23,128 @@ class CountingObjectItem extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    if (isCounted) {
-      // Hidden or empty placeholder when already placed in basket
-      return SizedBox(
-        width: size,
-        height: size,
-        child: Opacity(
-          opacity: 0.2,
-          child: _buildVisual(),
-        ),
-      );
-    }
+  State<CountingObjectItem> createState() => _CountingObjectItemState();
+}
 
-    return Draggable<int>(
-      data: id,
-      feedback: Material(
-        color: Colors.transparent,
-        child: Transform.scale(
-          scale: 1.15,
-          child: _buildVisual(),
-        ),
-      ),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: _buildVisual(),
-      ),
-      child: GestureDetector(
-        onTap: onTap,
-        child: _buildVisual(),
-      ),
+class _CountingObjectItemState extends State<CountingObjectItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _bounceController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
     );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.25), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 1.25, end: 0.95), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 0.95, end: 1.0), weight: 1),
+    ]).animate(CurvedAnimation(
+      parent: _bounceController,
+      curve: Curves.easeOutBack,
+    ));
   }
 
-  Widget _buildVisual() {
-    return Container(
-      width: size,
-      height: size,
-      padding: const EdgeInsets.all(AppSpacing.space4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-        border: Border.all(
-          color: AppColors.numberPrimary,
-          width: 2.5,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.numberBevel,
-            offset: Offset(0, 3.0),
-            blurRadius: 0,
+  @override
+  void didUpdateWidget(covariant CountingObjectItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isCounted && !oldWidget.isCounted) {
+      _bounceController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    _bounceController.forward(from: 0.0);
+    widget.onTap?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: child,
+          );
+        },
+        child: SizedBox(
+          width: widget.size,
+          height: widget.size + 10.0,
+          child: Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              // Soft Diorama Contact Shadow on the Floor
+              Positioned(
+                bottom: 2.0,
+                child: Container(
+                  width: widget.size * 0.65,
+                  height: 8.0,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.09),
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                ),
+              ),
+
+              // Transparent 3D Clay Fruit Asset
+              Positioned(
+                bottom: 8.0,
+                child: Image.asset(
+                  widget.objectAsset,
+                  width: widget.size,
+                  height: widget.size,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.eco_rounded,
+                      size: widget.size * 0.7,
+                      color: AppColors.numberPrimary,
+                    );
+                  },
+                ),
+              ),
+
+              // Tactile Tap Badge (Visual checkmark when counted by touch)
+              if (widget.isCounted)
+                Positioned(
+                  top: 0,
+                  right: 4.0,
+                  child: Container(
+                    width: 22.0,
+                    height: 22.0,
+                    decoration: BoxDecoration(
+                      color: AppColors.brandMint,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2.0),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          offset: Offset(0, 2.0),
+                          blurRadius: 4.0,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      size: 14.0,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
-        child: Image.asset(
-          objectAsset,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            // Graceful fallback icon for mock assets
-            return Icon(
-              Icons.eco_rounded,
-              size: size * 0.55,
-              color: AppColors.numberPrimary,
-            );
-          },
         ),
       ),
     );

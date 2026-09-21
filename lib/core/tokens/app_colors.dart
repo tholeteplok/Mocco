@@ -1,38 +1,45 @@
 import 'package:flutter/material.dart';
 
-/// Centralized color palette for Mocco Design System (v1.5)
+/// Centralized color palette for Mocco Design System (v2.0 - Airy Clay & Playful Diorama)
 /// Ensures consistency across all screens without hardcoding colors.
 abstract final class AppColors {
-  // --- Background ---
-  static const Color background = Color(0xFFFFF6EB); // Warm Cream
+  // --- Canvas & Surfaces (Pinterest Warm Calm Standard) ---
+  static const Color canvasBackground = Color(0xFFFAF8F5); // Warm Cream Milk Canvas
+  static const Color background = canvasBackground; // Compatibility alias
+  static const Color cardSurface = Color(0xFFFFFFFF); // Pure Luminous White
+  static const Color cardBorder = Color(0xFFF0EAE1); // Subtle card outline (1.5dp)
+  static const Color cardBevel = Color(0xFFE8E0D5); // Soft 2.5D floor bevel
 
   // --- Category: Huruf (Letters) ---
-  static const Color letterPrimary = Color(0xFF6FA8DC); // Pastel Blue
+  static const Color letterPrimary = Color(0xFF4EA8DE); // Pastel Sky Blue
   static const Color letterTint = Color(0xFFE3EEF9);
-  static const Color letterBevel = Color(0xFF4F86B8);
+  static const Color letterBevel = Color(0xFF388AC0);
 
   // --- Category: Angka (Numbers) ---
-  static const Color numberPrimary = Color(0xFFF4A259); // Pastel Orange
+  static const Color numberPrimary = Color(0xFFFF9F1C); // Warm Honeycomb Orange
   static const Color numberTint = Color(0xFFFDEBD7);
-  static const Color numberBevel = Color(0xFFD68236);
+  static const Color numberBevel = Color(0xFFE08628);
 
   // --- Category: Blending (Word Combining) ---
-  static const Color blendingPrimary = Color(0xFF7BC47F); // Pastel Green
-  static const Color blendingTint = Color(0xFFE3F4EC);
-  static const Color blendingBevel = Color(0xFF5DA361);
+  static const Color blendingPrimary = Color(0xFF48CAE4); // Cyan Blue
+  static const Color blendingTint = Color(0xFFE8F7FA);
+  static const Color blendingBevel = Color(0xFF32A8C0);
 
-  // --- Feedback ---
-  static const Color successBackground = Color(0xFFE8F5E9);
-  static const Color successBevel = Color(0xFF7BC47F);
+  // --- Feedback & Gamification (Pinterest Dopamine Standard) ---
+  static const Color brandMint = Color(0xFF2EC4B6); // Luminous Mint Green (Success & Next CTA)
+  static const Color brandMintDark = Color(0xFF25A296); // Bevel for Mint buttons
+  static const Color successBackground = Color(0xFF2EC4B6);
+  static const Color successBevel = Color(0xFF25A296);
+  static const Color successBannerBg = Color(0xFFE8F8F5); // Very soft mint wash for banner
 
   static const Color retryBackground = Color(0xFFFFF3D6);
   static const Color retryBevel = Color(0xFFF5C542);
 
   // --- Text & Glyphs (WCAG AAA Compliance) ---
-  static const Color textPrimary = Color(0xFF000000); // Black for max contrast
-  static const Color textSecondary = Color(0xFF4A4A4A);
+  static const Color textPrimary = Color(0xFF2B2D42); // Warm Charcoal - easier on young eyes than harsh black
+  static const Color textSecondary = Color(0xFF6C757D);
   static const Color textWhite = Color(0xFFFFFFFF);
 
-  // --- Overlays (V9 / V25: Solid 40% without blur) ---
+  // --- Overlays ---
   static const Color modalOverlay = Color(0x66000000); // 40% black
 }

@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Centralized typography for Mocco Design System (v1.5)
-/// - Andika for learning display & tracing (V5, V23, V33)
-/// - Nunito / Lexend Soft for UI interface (V19)
+/// Centralized typography for Mocco Design System (v2.0)
+/// - Andika for learning display & tracing
+/// - Nunito for UI interface & feedback
 abstract final class AppTypography {
   /// Display for letters and numbers (120 - 200sp)
-  /// Note: Glyph display should NOT follow OS text-scaling (V33)
   static TextStyle learningDisplay({
     double fontSize = 140.0,
     Color color = AppColors.textPrimary,
@@ -52,6 +51,18 @@ abstract final class AppTypography {
     return GoogleFonts.nunito(
       fontSize: fontSize,
       fontWeight: FontWeight.w700,
+      color: color,
+    );
+  }
+
+  /// UI Body / Label text
+  static TextStyle uiBody({
+    double fontSize = 16.0,
+    Color color = AppColors.textPrimary,
+  }) {
+    return GoogleFonts.nunito(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w600,
       color: color,
     );
   }

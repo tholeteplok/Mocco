@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
-import '../../../core/utils/responsive_helper.dart';
+import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/sound_player.dart';
 import '../../../domain/entities/counting_question.dart';
 import '../../../domain/services/counting_question_generator.dart';
@@ -11,16 +11,17 @@ import '../../widgets/buttons/chunky_button.dart';
 import '../../widgets/cards/chunky_card.dart';
 import '../../widgets/cards/flashcard_answer.dart';
 import '../../widgets/counting/counting_basket.dart';
-import '../../widgets/counting/counting_grid_area.dart';
+import '../../widgets/counting/counting_floating_area.dart';
+import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
 
-/// Interactive Counting Practice Screen (Core Numerasi - Jalur Angka)
+/// Interactive Counting Screen (Pinterest v2.0 Standard: Airy Clay & Playful Diorama)
 /// Features:
-/// - Pre-reader friendly (Icon-First navigation & Audio Prompt)
-/// - Drag-and-drop CountingBasket for tactile 1-to-1 correspondence (V16)
-/// - Subitizing 5+n grid for numbers 6–10
-/// - 4 Flashcard answers with correct ± 1 distractors
+/// - Floating 3D clay objects without enclosing boxes
+/// - Symmetrical 1x4 horizontal answer choice row (Zero wrap / anti-orphan)
+/// - Vibrant mint green (#2EC4B6) success state transition
+/// - Gamified dopamine loop with Mascot Celebration Banner + "[ Lanjut → ]" CTA
 class CountingScreen extends StatefulWidget {
   const CountingScreen({
     super.key,
@@ -70,6 +71,20 @@ class _CountingScreenState extends State<CountingScreen> {
     });
   }
 
+  void _advanceToNext() {
+    for (final timer in _activeTimers) {
+      timer.cancel();
+    }
+    _activeTimers.clear();
+
+    if (_currentStep < widget.totalSteps) {
+      setState(() => _currentStep++);
+      _loadNextQuestion();
+    } else {
+      widget.onCompleted?.call();
+    }
+  }
+
   void _handleAnswerTap(int answer) {
     if (_isAnswerCorrect) return; // already answered correctly
 
@@ -83,14 +98,10 @@ class _CountingScreenState extends State<CountingScreen> {
         if (mounted) SoundPlayer.instance.playPraise();
       }));
 
-      // Auto advance after 1 second of visual joy
-      _activeTimers.add(Timer(const Duration(milliseconds: 1000), () {
-        if (!mounted) return;
-        if (_currentStep < widget.totalSteps) {
-          setState(() => _currentStep++);
-          _loadNextQuestion();
-        } else {
-          widget.onCompleted?.call();
+      // Auto-advance backup timer (gives child ample time to enjoy dopamine cheer)
+      _activeTimers.add(Timer(const Duration(milliseconds: 3200), () {
+        if (mounted && _isAnswerCorrect) {
+          _advanceToNext();
         }
       }));
     } else {
@@ -119,8 +130,6 @@ class _CountingScreenState extends State<CountingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = ResponsiveHelper.isLandscape(context);
-
     return ResponsiveScaffold(
       header: ChunkyHeader(
         currentStep: _currentStep,
@@ -133,147 +142,174 @@ class _CountingScreenState extends State<CountingScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Audio prompt button at top
-              AudioPromptButton(
-                onPressed: () {
-                  SoundPlayer.instance.playPromptCount();
-                },
-              ),
-              const SizedBox(height: AppSpacing.space16),
-
-              // Main Counting Area (Card with Objects & Basket)
-              ChunkyCard(
-                backgroundColor: const Color(0xFFFFF3E0),
-                borderColor: AppColors.numberPrimary,
-                bevelColor: AppColors.numberBevel,
-                padding: const EdgeInsets.all(AppSpacing.space16),
-                child: isLandscape
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Expanded(child: _buildGridArea()),
-                          const SizedBox(width: AppSpacing.space16),
-                          _buildBasket(),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          _buildGridArea(),
-                          const SizedBox(height: AppSpacing.space16),
-                          _buildBasket(),
-                        ],
-                      ),
-              ),
-
-              const SizedBox(height: AppSpacing.space24),
-
-              // 4 Flashcard Answer Options
-              Wrap(
-                spacing: AppSpacing.cardGap,
-                runSpacing: AppSpacing.cardGap,
-                alignment: WrapAlignment.center,
-                children: [
-                  for (final option in _currentQuestion.options)
-                    FlashcardAnswer(
-                      text: '$option',
-                      isSelected: _selectedAnswer == option,
-                      primaryColor: _selectedAnswer == option
-                          ? (_isAnswerCorrect
-                              ? AppColors.successBackground
-                              : AppColors.retryBackground)
-                          : AppColors.numberTint,
-                      borderColor: _selectedAnswer == option
-                          ? (_isAnswerCorrect
-                              ? AppColors.successBevel
-                              : AppColors.retryBevel)
-                          : AppColors.numberPrimary,
-                      bevelColor: _selectedAnswer == option
-                          ? (_isAnswerCorrect
-                              ? AppColors.successBevel
-                              : AppColors.retryBevel)
-                          : AppColors.numberBevel,
-                      onTap: () => _handleAnswerTap(option),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: AppSpacing.space24),
-
-              // Icon-Only Navigation Buttons
+              // Prompt Header & Audio Trigger
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Replay question / reset basket
-                  ChunkyButton(
-                    icon: const Icon(
-                      Icons.replay_rounded,
-                      size: 32.0,
-                      color: AppColors.textPrimary,
-                    ),
-                    primaryColor: AppColors.letterTint,
-                    bevelColor: AppColors.letterBevel,
+                  AudioPromptButton(
                     onPressed: () {
-                      SoundPlayer.instance.playPop();
-                      setState(() {
-                        _countedItemIds.clear();
-                        _selectedAnswer = -1;
-                      });
+                      SoundPlayer.instance.playPromptCount();
                     },
                   ),
-                  const SizedBox(width: AppSpacing.space24),
-                  // Forward / Next
-                  ChunkyButton(
-                    icon: const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 32.0,
+                  const SizedBox(width: AppSpacing.space12),
+                  Text(
+                    'Hitung ada berapa buah?',
+                    style: AppTypography.uiHeading(
+                      fontSize: 18.0,
                       color: AppColors.textPrimary,
                     ),
-                    primaryColor: AppColors.numberPrimary,
-                    bevelColor: AppColors.numberBevel,
-                    onPressed: () {
-                      SoundPlayer.instance.playPop();
-                      if (_currentStep < widget.totalSteps) {
-                        setState(() => _currentStep++);
-                        _loadNextQuestion();
-                      } else {
-                        widget.onCompleted?.call();
-                      }
-                    },
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.space16),
+
+              // Main Diorama Card (Pure White Surface)
+              ChunkyCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.space20,
+                  vertical: AppSpacing.space16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Floating 3D Fruit Area
+                    CountingFloatingArea(
+                      totalCount: _currentQuestion.count,
+                      objectAsset: _currentQuestion.objectType,
+                      countedItemIds: _countedItemIds,
+                      onItemTapped: (id) {
+                        if (_countedItemIds.contains(id)) {
+                          _handleItemRemoved(id);
+                        } else {
+                          _handleItemDropped(id);
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: AppSpacing.space8),
+
+                    // Soft Basket Shelf (Clean diorama companion)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        CountingBasket(
+                          width: 84.0,
+                          height: 74.0,
+                          countedItemIds: _countedItemIds,
+                          objectAsset: _currentQuestion.objectType,
+                          onItemDropped: _handleItemDropped,
+                          onItemRemoved: _handleItemRemoved,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.space20),
+
+              // Symmetrical 1x4 Answer Choices (Pinterest Anti-Orphan Grid)
+              Row(
+                children: [
+                  for (final option in _currentQuestion.options)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: FlashcardAnswer(
+                          text: '$option',
+                          isSelected: _selectedAnswer == option,
+                          isCorrect: _isAnswerCorrect && _selectedAnswer == option,
+                          primaryColor: _selectedAnswer == option
+                              ? (_isAnswerCorrect
+                                  ? AppColors.successBackground
+                                  : AppColors.retryBackground)
+                              : AppColors.cardSurface,
+                          borderColor: _selectedAnswer == option
+                              ? (_isAnswerCorrect
+                                  ? AppColors.brandMintDark
+                                  : AppColors.retryBevel)
+                              : AppColors.cardBorder,
+                          bevelColor: _selectedAnswer == option
+                              ? (_isAnswerCorrect
+                                  ? AppColors.brandMintDark
+                                  : AppColors.retryBevel)
+                              : AppColors.cardBevel,
+                          onTap: () => _handleAnswerTap(option),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+
+              const SizedBox(height: AppSpacing.space16),
+
+              // Bottom Section: Celebration Banner OR Navigation Controls
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.25),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: _isAnswerCorrect
+                    ? CelebrationBanner(
+                        key: const ValueKey('celebration'),
+                        title: 'Luar Biasa!',
+                        subtitle: 'Kamu berhasil menghitung dengan benar!',
+                        onNextPressed: _advanceToNext,
+                      )
+                    : Row(
+                        key: const ValueKey('navigation'),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Replay / Reset
+                          ChunkyButton(
+                            icon: const Icon(
+                              Icons.replay_rounded,
+                              size: 28.0,
+                              color: AppColors.textPrimary,
+                            ),
+                            primaryColor: AppColors.cardSurface,
+                            bevelColor: AppColors.cardBevel,
+                            onPressed: () {
+                              SoundPlayer.instance.playPop();
+                              setState(() {
+                                _countedItemIds.clear();
+                                _selectedAnswer = -1;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: AppSpacing.space24),
+                          // Skip / Forward
+                          ChunkyButton(
+                            icon: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 28.0,
+                              color: AppColors.textWhite,
+                            ),
+                            primaryColor: AppColors.brandMint,
+                            bevelColor: AppColors.brandMintDark,
+                            onPressed: () {
+                              SoundPlayer.instance.playPop();
+                              _advanceToNext();
+                            },
+                          ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: AppSpacing.space12),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildGridArea() {
-    return CountingGridArea(
-      totalCount: _currentQuestion.count,
-      objectAsset: _currentQuestion.objectType,
-      countedItemIds: _countedItemIds,
-      onItemTapped: (id) {
-        // Tapping an item drops it into the basket
-        if (_countedItemIds.contains(id)) {
-          _handleItemRemoved(id);
-        } else {
-          _handleItemDropped(id);
-        }
-      },
-    );
-  }
-
-  Widget _buildBasket() {
-    return CountingBasket(
-      countedItemIds: _countedItemIds,
-      objectAsset: _currentQuestion.objectType,
-      onItemDropped: _handleItemDropped,
-      onItemRemoved: _handleItemRemoved,
     );
   }
 }
