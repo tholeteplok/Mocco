@@ -49,8 +49,10 @@ void main() {
     await tester.tap(find.widgetWithText(SyllableCard, 'ku'));
     await tester.pump();
 
-    // Advance timers for celebration animation and completion callback
-    await tester.pump(const Duration(milliseconds: 1500));
+    // Child keeps control — tap Lanjut on celebration banner (no auto-advance)
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text('Lanjut'));
+    await tester.pump();
 
     expect(completed, isTrue);
   });

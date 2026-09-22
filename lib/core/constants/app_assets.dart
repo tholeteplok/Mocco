@@ -39,6 +39,7 @@ abstract final class AppAssets {
   static const String basketClay = '$_ui/basket_clay.jpg';
 
   // --- UI Assets ---
+  static const String mapCanvasBg = '$_ui/map_canvas_loop.png';
   static const String mascotIdle = '$_ui/mascot_idle.png';
   static const String mascotJump = '$_ui/mascot_jump.png';
   static const String badgeStamp = '$_ui/badge_stamp.png';

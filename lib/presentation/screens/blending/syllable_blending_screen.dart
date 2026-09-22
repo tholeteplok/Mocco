@@ -10,6 +10,7 @@ import '../../widgets/blending/syllable_card.dart';
 import '../../widgets/blending/word_slot.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/buttons/bubble_icon_button.dart';
+import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/jelly_progress_bar.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
 
@@ -106,9 +107,26 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
     }
   }
 
+  void _advanceToNext() {
+    for (final timer in _activeTimers) {
+      timer.cancel();
+    }
+    _activeTimers.clear();
+
+    if (_currentIndex < _words.length - 1) {
+      setState(() {
+        _currentIndex++;
+        _setupCurrentWord();
+      });
+      _blendAnimController.reset();
+    } else {
+      widget.onCompleted?.call();
+    }
+  }
+
   void _verifyAnswer() {
     if (_slot1 == _currentWord.syllable1 && _slot2 == _currentWord.syllable2) {
-      // Correct! Trigger inward slide & chime
+      // Correct! Child keeps full control — no auto-advance.
       setState(() {
         _isSuccess = true;
         _isLockInput = true;
@@ -121,19 +139,6 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
       }));
       _activeTimers.add(Timer(const Duration(milliseconds: 800), () {
         if (mounted) SoundPlayer.instance.playPraise();
-      }));
-
-      _activeTimers.add(Timer(const Duration(milliseconds: 1300), () {
-        if (!mounted) return;
-        if (_currentIndex < _words.length - 1) {
-          setState(() {
-            _currentIndex++;
-            _setupCurrentWord();
-          });
-          _blendAnimController.reset();
-        } else {
-          widget.onCompleted?.call();
-        }
       }));
     } else {
       // Incorrect: gentle retry sound & soft bounce back
@@ -283,36 +288,40 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
             },
           ),
 
-          // Success indicator badge
-          SizedBox(
-            height: 36.0,
-            child: Center(
-              child: _isSuccess
-                  ? const Icon(
-                      Icons.star_rounded,
-                      size: 32.0,
-                      color: AppColors.retryBevel,
-                    )
-                  : const SizedBox.shrink(),
-            ),
+          // Success celebration (consistent dopamine loop with other screens)
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _isSuccess
+                ? CelebrationBanner(
+                    key: const ValueKey('blending-celebration'),
+                    title: 'Hebat Sekali!',
+                    subtitle: 'Kata "${_currentWord.word}" berhasil dirangkai!',
+                    onNextPressed: _advanceToNext,
+                  )
+                : const SizedBox(
+                    key: ValueKey('blending-spacer'),
+                    height: 12.0,
+                  ),
           ),
 
           const Spacer(),
 
-          // Syllable Selection Choices (Pre-reader 2.5D Cards)
+          // Syllable Selection Choices — symmetrical 1x4 anti-orphan row
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.space16),
-            child: Wrap(
-              spacing: AppSpacing.space12,
-              runSpacing: AppSpacing.space12,
-              alignment: WrapAlignment.center,
+            child: Row(
               children: _options.map((syl) {
                 // Determine if this specific option chip is currently placed in a slot
                 final isUsed = (_slot1 == syl) || (_slot2 == syl && _slot1 != syl);
-                return SyllableCard(
-                  syllable: syl,
-                  isUsed: isUsed,
-                  onTap: () => _handleSyllableTapped(syl),
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: SyllableCard(
+                      syllable: syl,
+                      isUsed: isUsed,
+                      onTap: () => _handleSyllableTapped(syl),
+                    ),
+                  ),
                 );
               }).toList(),
             ),

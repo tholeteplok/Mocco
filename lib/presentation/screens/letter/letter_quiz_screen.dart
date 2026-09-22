@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
@@ -44,6 +45,8 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
   String? _selectedLetter;
   bool _isAnswerCorrect = false;
   final List<Timer> _activeTimers = [];
+  final Random _random = Random();
+  String _lastTargetChar = '';
 
   @override
   void initState() {
@@ -62,7 +65,13 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
   void _loadNextQuestion() {
     setState(() {
       final letterCatalog = LetterEntity.alphabet;
-      _targetLetter = letterCatalog[(_currentStep * 3) % letterCatalog.length];
+      // Random target with no immediate repeat (early Leitner feel).
+      LetterEntity candidate;
+      do {
+        candidate = letterCatalog[_random.nextInt(letterCatalog.length)];
+      } while (candidate.char == _lastTargetChar && letterCatalog.length > 1);
+      _targetLetter = candidate;
+      _lastTargetChar = candidate.char;
       _options = widget.generator.generateOptions(_targetLetter.char, isUppercase: true);
       _selectedLetter = null;
       _isAnswerCorrect = false;
@@ -94,18 +103,11 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
     setState(() => _selectedLetter = option);
 
     if (option == _targetLetter.char) {
-      // Correct answer!
+      // Correct answer! Child keeps full control — no auto-advance.
       setState(() => _isAnswerCorrect = true);
       SoundPlayer.instance.playSuccess();
       _activeTimers.add(Timer(const Duration(milliseconds: 350), () {
         if (mounted) SoundPlayer.instance.playPraise();
-      }));
-
-      // Auto-advance backup timer
-      _activeTimers.add(Timer(const Duration(milliseconds: 3200), () {
-        if (mounted && _isAnswerCorrect) {
-          _advanceToNext();
-        }
       }));
     } else {
       // Soft retry - anti frustration (V0.4)
@@ -158,7 +160,7 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
                     Text(
                       'Pilih huruf yang kamu dengar!',
                       style: AppTypography.uiHeading(
-                        fontSize: 18.0,
+                        fontSize: 22.0,
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -219,14 +221,15 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
                     ? CelebrationBanner(
                         key: const ValueKey('celebration'),
                         title: 'Hebat Sekali!',
-                        subtitle: 'Pilihan hurufmu tepat!',
+                        subtitle:
+                            '${_targetLetter.pairDisplay} yang tepat! Bunyinya ${_targetLetter.phonic}',
                         onNextPressed: _advanceToNext,
                       )
                     : Row(
                         key: const ValueKey('navigation'),
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Replay question
+                          // Replay question (only action before answering — no skip)
                           ChunkyButton(
                             icon: const Icon(
                               Icons.replay_rounded,
@@ -238,21 +241,6 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
                             onPressed: () {
                               SoundPlayer.instance.playPop();
                               setState(() => _selectedLetter = null);
-                            },
-                          ),
-                          const SizedBox(width: AppSpacing.space24),
-                          // Forward / Next
-                          ChunkyButton(
-                            icon: const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 28.0,
-                              color: AppColors.textWhite,
-                            ),
-                            primaryColor: AppColors.brandMint,
-                            bevelColor: AppColors.brandMintDark,
-                            onPressed: () {
-                              SoundPlayer.instance.playPop();
-                              _advanceToNext();
                             },
                           ),
                         ],

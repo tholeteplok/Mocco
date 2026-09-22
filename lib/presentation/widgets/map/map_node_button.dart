@@ -146,17 +146,21 @@ class _MapNodeButtonState extends State<MapNodeButton>
           clipBehavior: Clip.none,
           children: [
             if (isLocked)
-              const Icon(
+              Icon(
                 Icons.lock_rounded,
-                size: 32.0,
-                color: Color(0xFF8C867F),
+                size: (widget.size * 0.38).clamp(18.0, 30.0),
+                color: const Color(0xFF8C867F),
               )
             else
               Text(
                 widget.label,
                 textAlign: TextAlign.center,
                 style: AppTypography.learningDisplay(
-                  fontSize: widget.label.length > 3 ? 24.0 : 34.0,
+                  fontSize: widget.label.length > 4
+                      ? (widget.size * 0.24).clamp(12.0, 22.0)
+                      : widget.label.length > 1
+                          ? (widget.size * 0.32).clamp(16.0, 26.0)
+                          : (widget.size * 0.38).clamp(18.0, 32.0),
                   color: AppColors.textPrimary,
                 ),
               ),

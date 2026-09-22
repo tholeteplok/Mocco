@@ -98,11 +98,15 @@ class _ChunkyButtonState extends State<ChunkyButton> {
             if (widget.icon != null && widget.text != null)
               const SizedBox(width: AppSpacing.space8),
             if (widget.text != null)
-              Text(
-                widget.text!,
-                style: AppTypography.uiButton(
-                  fontSize: widget.fontSize,
-                  color: widget.textColor,
+              Flexible(
+                child: Text(
+                  widget.text!,
+                  style: AppTypography.uiButton(
+                    fontSize: widget.fontSize,
+                    color: widget.textColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
           ],

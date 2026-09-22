@@ -20,7 +20,7 @@ abstract final class AppSpacing {
 
   // Touch targets (Minimum 64x64dp)
   static const double minTouchTarget = 64.0;
-  static const double bubbleButtonSize = 56.0;
+  static const double bubbleButtonSize = 64.0;
   static const double bubbleButtonSizeTablet = 64.0;
 
   // Flashcard Answer dimensions

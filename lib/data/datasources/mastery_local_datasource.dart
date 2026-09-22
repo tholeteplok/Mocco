@@ -8,12 +8,17 @@ abstract class MasteryLocalDataSource {
   Future<List<MasteryRecord>> getAllRecords();
   Future<void> saveRecord(MasteryRecord record);
 
-  /// Linear progress tracking
+  /// Linear progress tracking (legacy — per-zone)
   Future<int> getUnlockedNumberIndex();
   Future<void> setUnlockedNumberIndex(int index);
 
   Future<int> getUnlockedLetterIndex();
   Future<void> setUnlockedLetterIndex(int index);
+
+  /// Global journey node index (sumber kebenaran utama untuk JourneyScreen).
+  /// Nilai 1 = node pertama (Angka 1) aktif.
+  Future<int> getGlobalUnlockedIndex();
+  Future<void> setGlobalUnlockedIndex(int index);
 }
 
 class HiveMasteryLocalDataSource implements MasteryLocalDataSource {
@@ -77,5 +82,15 @@ class HiveMasteryLocalDataSource implements MasteryLocalDataSource {
   @override
   Future<void> setUnlockedLetterIndex(int index) async {
     await _box.put('__system_unlocked_letter', index);
+  }
+
+  @override
+  Future<int> getGlobalUnlockedIndex() async {
+    return (_box.get('__system_global_node') as num?)?.toInt() ?? 1;
+  }
+
+  @override
+  Future<void> setGlobalUnlockedIndex(int index) async {
+    await _box.put('__system_global_node', index);
   }
 }

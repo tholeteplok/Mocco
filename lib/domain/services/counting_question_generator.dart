@@ -4,7 +4,9 @@ import '../entities/counting_question.dart';
 
 /// Service to generate counting questions with research-backed distractors and subitizing rules
 class CountingQuestionGenerator {
-  const CountingQuestionGenerator();
+  final int? fixedTargetCount;
+
+  const CountingQuestionGenerator({this.fixedTargetCount});
 
   /// Generates a counting question for numbers 1 to 10
   CountingQuestion generate({
@@ -14,8 +16,8 @@ class CountingQuestionGenerator {
   }) {
     final rng = random ?? Random();
 
-    // 1. Pick count (1–10)
-    final count = targetCount ?? (rng.nextInt(10) + 1);
+    // 1. Pick count (1–10). Prioritaskan parameter, lalu fixedTargetCount, lalu acak
+    final count = targetCount ?? fixedTargetCount ?? (rng.nextInt(10) + 1);
 
     // 2. Pick single object type (1 jenis objek per soal - V30)
     final object = objectType ??

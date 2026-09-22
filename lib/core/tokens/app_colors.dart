@@ -21,9 +21,10 @@ abstract final class AppColors {
   static const Color numberBevel = Color(0xFFE08628);
 
   // --- Category: Blending (Word Combining) ---
-  static const Color blendingPrimary = Color(0xFF48CAE4); // Cyan Blue
-  static const Color blendingTint = Color(0xFFE8F7FA);
-  static const Color blendingBevel = Color(0xFF32A8C0);
+  // Distinct leaf-green so it never confuses with letter sky-blue (reff).
+  static const Color blendingPrimary = Color(0xFF7BC47F); // Pastel Leaf Green
+  static const Color blendingTint = Color(0xFFE3F4EC);
+  static const Color blendingBevel = Color(0xFF5DA361);
 
   // --- Feedback & Gamification (Pinterest Dopamine Standard) ---
   static const Color brandMint = Color(0xFF2EC4B6); // Luminous Mint Green (Success & Next CTA)
@@ -37,7 +38,7 @@ abstract final class AppColors {
 
   // --- Text & Glyphs (WCAG AAA Compliance) ---
   static const Color textPrimary = Color(0xFF2B2D42); // Warm Charcoal - easier on young eyes than harsh black
-  static const Color textSecondary = Color(0xFF6C757D);
+  static const Color textSecondary = Color(0xFF495057); // Darkened for AAA on cream canvas
   static const Color textWhite = Color(0xFFFFFFFF);
 
   // --- Overlays ---
