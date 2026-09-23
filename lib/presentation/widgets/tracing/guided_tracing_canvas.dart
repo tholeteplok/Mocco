@@ -243,6 +243,7 @@ class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
   }
 
   bool get hasDrawn => _userStrokes.isNotEmpty && _userStrokes.first.length > 5;
+  bool get hasUserStrokes => _userStrokes.isNotEmpty || (_currentStroke != null && _currentStroke!.isNotEmpty);
 
   @override
   Widget build(BuildContext context) {
@@ -288,6 +289,7 @@ class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
                     _userStrokes.add(_currentStroke!);
                   });
                   _checkProximity(d.localPosition);
+                  widget.onProgressChanged?.call(progress);
                   SoundPlayer.instance.playSquish();
                 },
                 onPanUpdate: (d) {

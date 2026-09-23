@@ -6,6 +6,7 @@ import '../../../core/utils/sound_player.dart';
 import '../../widgets/buttons/chunky_button.dart';
 import '../../widgets/cards/chunky_card.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
+import '../../widgets/mascot/mascot_widget.dart';
 import '../map/adventure_map_screen.dart';
 
 /// Home funnel (reff: Hello Arjun + Featured Lesson + Let's Explore + Quiz Time).
@@ -38,21 +39,27 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: AppSpacing.space8),
-            // Greeting header (reff: Hello, Arjun! + bell)
+            // Greeting header (reff: Hello, Arjun! + living mascot + stars)
             Row(
               children: [
+                const MascotWidget(
+                  mood: MascotMood.greeting,
+                  size: 56.0,
+                  animate: true,
+                ),
+                const SizedBox(width: AppSpacing.space12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Halo, Petualang!',
-                        style: AppTypography.uiHeading(fontSize: 24.0),
+                        style: AppTypography.uiHeading(fontSize: 22.0),
                       ),
                       Text(
                         'Siap belajar hal seru hari ini?',
                         style: AppTypography.uiBody(
-                          fontSize: 14.0,
+                          fontSize: 13.0,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -172,25 +179,47 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.space12),
-                  Container(
-                    width: 96.0,
-                    height: 96.0,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
-                      border: Border.all(
-                        color: AppColors.letterPrimary.withValues(alpha: 0.4),
-                        width: 2.0,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 96.0,
+                        height: 96.0,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+                          border: Border.all(
+                            color: AppColors.letterPrimary.withValues(alpha: 0.4),
+                            width: 2.0,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: const MascotWidget(
+                          mood: MascotMood.reading,
+                          size: 78.0,
+                          animate: true,
+                        ),
                       ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Aa',
-                      style: AppTypography.learningDisplay(
-                        fontSize: 52.0,
-                        color: AppColors.letterPrimary,
+                      Positioned(
+                        top: -6,
+                        right: -6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+                          decoration: BoxDecoration(
+                            color: AppColors.letterPrimary,
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: Text(
+                            'Aa',
+                            style: AppTypography.uiButton(
+                              fontSize: 13.0,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),

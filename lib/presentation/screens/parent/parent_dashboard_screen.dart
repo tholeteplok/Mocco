@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
+import '../../widgets/buttons/chunky_button.dart';
 import '../../widgets/cards/chunky_card.dart';
+import '../../widgets/dialogs/screen_time_dialog.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
+import '../../widgets/mascot/mascot_widget.dart';
 
 /// Parent Dashboard (reff: Total Time + Lessons + Stars + Subject + Weekly).
 class ParentDashboardScreen extends StatelessWidget {
@@ -64,6 +67,50 @@ class ParentDashboardScreen extends StatelessWidget {
                       fontSize: 12.0,
                       color: AppColors.brandMintDark,
                     ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.space12),
+
+            // Screen Time & Wellbeing Control (Rest Priming)
+            ChunkyCard(
+              backgroundColor: const Color(0xFFF0F4FC),
+              borderColor: const Color(0xFF90B4EE),
+              child: Row(
+                children: [
+                  const MascotWidget(
+                    mood: MascotMood.sleeping,
+                    size: 52.0,
+                    animate: true,
+                  ),
+                  const SizedBox(width: AppSpacing.space12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Batas Waktu Layar',
+                          style: AppTypography.uiHeading(fontSize: 16.0),
+                        ),
+                        Text(
+                          'Mencegah kecanduan layar secara halus',
+                          style: AppTypography.uiBody(
+                            fontSize: 12.0,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ChunkyButton(
+                    text: 'Istirahat',
+                    height: 38.0,
+                    fontSize: 13.0,
+                    primaryColor: const Color(0xFF4A7BD0),
+                    bevelColor: const Color(0xFF2E5499),
+                    textColor: AppColors.textWhite,
+                    onPressed: () => ScreenTimeDialog.show(context),
                   ),
                 ],
               ),

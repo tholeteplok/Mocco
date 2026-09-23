@@ -65,28 +65,31 @@ class ChunkyHeader extends StatelessWidget implements PreferredSizeWidget {
             else
               const Spacer(),
 
-            // Right Actions (Audio / Settings)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onAudioToggle != null) ...[
-                  BubbleIconButton(
-                    icon: isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                    onPressed: onAudioToggle,
-                    borderColor: primaryColor,
-                    bevelColor: bevelColor,
-                  ),
-                  const SizedBox(width: AppSpacing.space8),
+            // Right Actions (Audio / Settings / Spacer)
+            if (onAudioToggle != null || onSettings != null)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (onAudioToggle != null) ...[
+                    BubbleIconButton(
+                      icon: isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                      onPressed: onAudioToggle,
+                      borderColor: primaryColor,
+                      bevelColor: bevelColor,
+                    ),
+                    if (onSettings != null) const SizedBox(width: AppSpacing.space8),
+                  ],
+                  if (onSettings != null)
+                    BubbleIconButton(
+                      icon: Icons.settings_rounded,
+                      onPressed: onSettings,
+                      borderColor: primaryColor,
+                      bevelColor: bevelColor,
+                    ),
                 ],
-                if (onSettings != null)
-                  BubbleIconButton(
-                    icon: Icons.settings_rounded,
-                    onPressed: onSettings,
-                    borderColor: primaryColor,
-                    bevelColor: bevelColor,
-                  ),
-              ],
-            ),
+              )
+            else
+              const SizedBox(width: AppSpacing.bubbleButtonSize),
           ],
         ),
       ),

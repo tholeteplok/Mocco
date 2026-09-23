@@ -16,7 +16,7 @@ import 'package:mocco/presentation/widgets/counting/counting_object_item.dart';
 import 'package:mocco/presentation/widgets/dialogs/parent_gate_dialog.dart';
 import 'package:mocco/presentation/widgets/map/map_node_button.dart';
 import 'package:mocco/presentation/widgets/nav/mocco_bottom_nav.dart';
-import 'package:mocco/presentation/widgets/tracing/tracing_canvas.dart';
+import 'package:mocco/presentation/widgets/tracing/guided_tracing_canvas.dart';
 
 class MockCountingGenerator extends CountingQuestionGenerator {
   const MockCountingGenerator();
@@ -95,8 +95,8 @@ void main() {
     expect(find.byType(CountingBasket), findsNothing);
     expect(find.byType(FlashcardAnswer), findsNWidgets(4));
 
-    // Open helper basket via Bantu toggle
-    await tester.tap(find.text('Bantu'));
+    // Open helper basket via shopping basket icon toggle
+    await tester.tap(find.byIcon(Icons.shopping_basket_rounded));
     await tester.pump();
     expect(find.byType(CountingBasket), findsOneWidget);
 
@@ -109,7 +109,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
-  testWidgets('LetterOnboardingScreen renders uppercase+lowercase and toggles tracing', (WidgetTester tester) async {
+  testWidgets('LetterOnboardingScreen renders Step 1 guided tracing for letter Aa', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: LetterOnboardingScreen(letterIndex: 0),
@@ -117,14 +117,12 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Aa'), findsOneWidget);
+    expect(find.text('Tebalkan huruf Aa!'), findsOneWidget);
     expect(find.byType(AudioPromptButton), findsOneWidget);
+    expect(find.byType(GuidedTracingCanvas), findsOneWidget);
 
-    // Tap toggle tracing button
-    await tester.tap(find.byIcon(Icons.gesture_rounded));
-    await tester.pump();
-
-    expect(find.byType(TracingCanvas), findsOneWidget);
+    // Allow demo timer to complete
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('LetterQuizScreen renders and responds to option selection', (WidgetTester tester) async {

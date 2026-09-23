@@ -5,10 +5,11 @@ import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/sound_player.dart';
 import '../../../domain/entities/letter_entity.dart';
-import '../../widgets/cards/chunky_card.dart';
+import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
+import '../../widgets/stage/diorama_stage.dart';
 
 /// Match uppercase to lowercase (reff: Match the Letter drag B-a).
 /// 3 pairs per round, drag kiri ke kanan, tanpa gagal keras.
@@ -73,7 +74,16 @@ class _LetterMatchScreenState extends State<LetterMatchScreen> {
       SoundPlayer.instance.playSuccess();
       if (_matches.length == _pairs.length) {
         Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) SoundPlayer.instance.playPraise();
+          if (mounted) {
+            SoundPlayer.instance.playPraise();
+            CelebrationPopup.show(
+              context: context,
+              title: 'Luar Biasa!',
+              subtitle: 'Semua huruf berhasil dipasangkan!',
+              buttonText: _currentStep < widget.totalSteps ? 'Lanjut' : 'Selesai',
+              onNextPressed: _advance,
+            );
+          }
         });
       }
     } else {
@@ -91,36 +101,46 @@ class _LetterMatchScreenState extends State<LetterMatchScreen> {
         primaryColor: AppColors.letterPrimary,
         tintColor: AppColors.letterTint,
         bevelColor: AppColors.letterBevel,
-        isMuted: SoundPlayer.instance.isMuted,
         onBack: widget.onBack,
-        onAudioToggle: () {
-          setState(() => SoundPlayer.instance.toggleMute());
-        },
       ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
           child: Column(
             children: [
-              Text(
-                'Match the Letter',
-                style: AppTypography.uiHeading(fontSize: 22.0),
-              ),
-              const SizedBox(height: 4.0),
-              Text(
-                'Tarik huruf besar ke huruf kecil yang sama!',
-                textAlign: TextAlign.center,
-                style: AppTypography.uiBody(
-                  fontSize: 14.0,
-                  color: AppColors.textSecondary,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AudioPromptButton(
+                    primaryColor: AppColors.letterTint,
+                    borderColor: AppColors.letterPrimary,
+                    bevelColor: AppColors.letterBevel,
+                    onPressed: () {
+                      SoundPlayer.instance.playPop();
+                      if (_pairs.isNotEmpty) {
+                        SoundPlayer.instance.playLetterName(_pairs.first.char);
+                      }
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.space12),
+                  Text(
+                    'Pasangkan Huruf! 🧩',
+                    style: AppTypography.uiHeading(
+                      fontSize: 22.0,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.space16),
-              ChunkyCard(
+              DioramaStage(
+                stageColor: AppColors.letterPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.space16,
-                  vertical: AppSpacing.space20,
+                  vertical: AppSpacing.space16,
                 ),
+                floorShadowWidth: 260.0,
+                floorShadowHeight: 16.0,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -165,24 +185,23 @@ class _LetterMatchScreenState extends State<LetterMatchScreen> {
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: _isRoundComplete
-                    ? CelebrationBanner(
-                        key: const ValueKey('match-celebration'),
-                        title: 'Well done!',
-                        subtitle: 'Kamu memasangkan semuanya dengan benar!',
-                        onNextPressed: _advance,
-                      )
-                    : SizedBox(
+                    ? const SizedBox(key: ValueKey('match-celebration'), height: 32.0)
+                    : Row(
                         key: const ValueKey('match-hint'),
-                        height: 48.0,
-                        child: Center(
-                          child: Text(
-                            '${_matches.length} dari ${_pairs.length} terpasang',
-                            style: AppTypography.uiBody(
-                              fontSize: 14.0,
-                              color: AppColors.textSecondary,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_pairs.length, (index) {
+                          final isFilled = index < _matches.length;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                            child: Icon(
+                              Icons.star_rounded,
+                              size: 32.0,
+                              color: isFilled
+                                  ? AppColors.brandOrange
+                                  : AppColors.cardBevel.withValues(alpha: 0.6),
                             ),
-                          ),
-                        ),
+                          );
+                        }),
                       ),
               ),
               const SizedBox(height: AppSpacing.space12),

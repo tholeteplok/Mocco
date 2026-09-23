@@ -1,35 +1,42 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_assets.dart';
+
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
-import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/sound_player.dart';
 import '../../../domain/entities/letter_entity.dart';
+import '../../../domain/services/letter_distractor_generator.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/buttons/chunky_button.dart';
-import '../../widgets/cards/chunky_card.dart';
+import '../../widgets/cards/flashcard_answer.dart';
+import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
-import '../../widgets/tracing/tracing_canvas.dart';
-import 'letter_match_screen.dart';
+import '../../widgets/mascot/mascot_widget.dart';
+import '../../widgets/stage/diorama_stage.dart';
+import '../../widgets/tracing/guided_tracing_canvas.dart';
 
-/// Screen for Letter Onboarding (Pinterest v2.0 Standard: Airy Clay & Playful Diorama)
+/// Screen for Letter Learning (Metode Angka — Pinterest v2.0 Standard: Airy Clay)
+///
 /// Features:
-/// - Side-by-side / balanced vertical diorama card layout
-/// - Letter display (Aa) with tactile tracing canvas
-/// - Floating 3D clay fruit cue (e.g. Apel for A) without enclosing box
-/// - Intuitive audio prompt and self-paced next action
+/// - Step 1: Integrated Guided Tracing (Tebalkan Huruf) with flowing dashes & pencil demo
+/// - Step 2-5: Audio-visual Letter Recognition Quiz with 3D clay cues & 4 symmetrical cards
+/// - Vibrant mint green (#2EC4B6) success state transition
+/// - Dopamine loop with Mascot Celebration Banner + "[ Lanjut → ]" CTA
 class LetterOnboardingScreen extends StatefulWidget {
   const LetterOnboardingScreen({
     super.key,
     this.letterIndex = 0,
+    this.totalSteps = 5,
+    this.generator = const LetterDistractorGenerator(),
     this.onCompleted,
     this.onBack,
   });
 
   final int letterIndex;
+  final int totalSteps;
+  final LetterDistractorGenerator generator;
   final VoidCallback? onCompleted;
   final VoidCallback? onBack;
 
@@ -38,394 +45,623 @@ class LetterOnboardingScreen extends StatefulWidget {
 }
 
 class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
+  final GlobalKey<GuidedTracingCanvasState> _canvasKey =
+      GlobalKey<GuidedTracingCanvasState>();
+
   late int _currentIndex;
-  bool _showTracing = false;
-  final GlobalKey<TracingCanvasState> _tracingKey = GlobalKey();
-  Timer? _phonicTimer;
-  Timer? _praiseTimer;
+  int _currentStep = 1;
+
+  // Tracing state (Step 1)
+  bool _isTracingCompleted = false;
+  bool _hasUserProgress = false;
+
+  // Matching & Quiz state (Step 2-5)
+  late List<String> _quizOptions;
+  String? _selectedOption;
+  bool _isAnswerCorrect = false;
+  bool _isObjectTapped = false;
+
+  final List<Timer> _activeTimers = [];
+
+  LetterEntity get _currentLetter =>
+      LetterEntity.alphabet[_currentIndex.clamp(0, LetterEntity.alphabet.length - 1)];
+
+  bool get _isTracingStep => _currentStep == 1;
+  bool get _isMatchingStep => _currentStep == 2;
+
+  String get _targetAnswer =>
+      _isMatchingStep ? _currentLetter.lowercaseChar : _currentLetter.char;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.letterIndex;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _playLetterAudio();
-    });
+    _prepareCurrentStep();
   }
 
   @override
   void dispose() {
-    _phonicTimer?.cancel();
-    _praiseTimer?.cancel();
+    for (final timer in _activeTimers) {
+      timer.cancel();
+    }
     super.dispose();
   }
 
-  LetterEntity get _currentLetter => LetterEntity.alphabet[_currentIndex];
+  void _prepareCurrentStep() {
+    if (_isTracingStep) {
+      _isTracingCompleted = false;
+      _hasUserProgress = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          SoundPlayer.instance.playLetterName(_currentLetter.char);
+        }
+      });
+    } else if (_isMatchingStep) {
+      _generateMatchingQuestion();
+    } else {
+      _generateQuizQuestion();
+    }
+  }
 
-  void _playLetterAudio() {
-    SoundPlayer.instance.playLetterName(_currentLetter.char);
-    _phonicTimer?.cancel();
-    _phonicTimer = Timer(const Duration(milliseconds: 700), () {
+  void _generateMatchingQuestion() {
+    setState(() {
+      _quizOptions = widget.generator.generateOptions(
+        _currentLetter.lowercaseChar,
+        isUppercase: false,
+      );
+      _selectedOption = null;
+      _isAnswerCorrect = false;
+      _isObjectTapped = false;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        SoundPlayer.instance.playLetterPhonic(_currentLetter.char);
+        SoundPlayer.instance.playLetterName(_currentLetter.char);
       }
     });
   }
 
-  void _nextLetter() {
-    if (_currentIndex < LetterEntity.alphabet.length - 1) {
+  void _generateQuizQuestion() {
+    setState(() {
+      _quizOptions = widget.generator.generateOptions(
+        _currentLetter.char,
+        isUppercase: true,
+      );
+      _selectedOption = null;
+      _isAnswerCorrect = false;
+      _isObjectTapped = false;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        SoundPlayer.instance.playLetterName(_currentLetter.char);
+      }
+    });
+  }
+
+  void _advanceToNext() {
+    for (final timer in _activeTimers) {
+      timer.cancel();
+    }
+    _activeTimers.clear();
+
+    if (_currentStep < widget.totalSteps) {
       setState(() {
-        _currentIndex++;
-        _showTracing = false;
+        _currentStep++;
       });
-      _playLetterAudio();
+      _prepareCurrentStep();
     } else {
       widget.onCompleted?.call();
     }
   }
 
+  void _handleOptionTap(String option) {
+    if (_isAnswerCorrect) return;
+
+    setState(() => _selectedOption = option);
+
+    if (option == _targetAnswer) {
+      // Jawaban Benar
+      setState(() => _isAnswerCorrect = true);
+      SoundPlayer.instance.playSuccess();
+      _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
+        if (mounted) SoundPlayer.instance.playPraise();
+      }));
+      CelebrationPopup.show(
+        context: context,
+        title: _isMatchingStep ? 'Hebat!' : 'Luar Biasa!',
+        subtitle: _isMatchingStep
+            ? 'Pasangan ${_currentLetter.char} dan ${_currentLetter.lowercaseChar} cocok!'
+            : 'Kamu menemukan huruf ${_currentLetter.char}!',
+        buttonText: _currentStep < widget.totalSteps ? 'Lanjut' : 'Selesai',
+        onNextPressed: _advanceToNext,
+      );
+    } else {
+      // Soft retry ramah anak
+      SoundPlayer.instance.playSoftRetry();
+      _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
+        if (mounted) SoundPlayer.instance.playEncouragement();
+      }));
+    }
+  }
+
+  void _playLetterAudio() {
+    SoundPlayer.instance.playLetterName(_currentLetter.char);
+    _activeTimers.add(Timer(const Duration(milliseconds: 600), () {
+      if (mounted) {
+        SoundPlayer.instance.playLetterPhonic(_currentLetter.char);
+      }
+    }));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isLandscape = ResponsiveHelper.isLandscape(context);
-
     return ResponsiveScaffold(
       header: ChunkyHeader(
-        currentStep: _currentIndex + 1,
-        totalSteps: LetterEntity.alphabet.length,
+        currentStep: _currentStep,
+        totalSteps: widget.totalSteps,
         primaryColor: AppColors.letterPrimary,
         tintColor: AppColors.letterTint,
         bevelColor: AppColors.letterBevel,
-        isMuted: SoundPlayer.instance.isMuted,
         onBack: widget.onBack,
-        onAudioToggle: () {
-          setState(() => SoundPlayer.instance.toggleMute());
-        },
       ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Audio prompt header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AudioPromptButton(
-                    primaryColor: AppColors.letterTint,
-                    borderColor: AppColors.letterPrimary,
-                    bevelColor: AppColors.letterBevel,
-                    onPressed: _playLetterAudio,
-                  ),
-                  const SizedBox(width: AppSpacing.space12),
-                  Expanded(
-                    child: Text(
-                      'Ayo Belajar Huruf ${_currentLetter.char}!',
-                      style: AppTypography.uiHeading(
-                        fontSize: 22.0,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.space16),
-
-              // Main Learning Card (Pure White Surface)
-              ChunkyCard(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.space24,
-                  vertical: AppSpacing.space20,
-                ),
-                child: isLandscape
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Expanded(child: _buildLetterOrTracingSection()),
-                          Container(
-                            width: 1.5,
-                            height: 180.0,
-                            color: AppColors.cardBorder,
-                          ),
-                          Expanded(child: _buildCueSection()),
-                        ],
-                      )
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildLetterOrTracingSection(),
-                          const SizedBox(height: AppSpacing.space16),
-                          Container(
-                            height: 1.5,
-                            width: double.infinity,
-                            color: AppColors.cardBorder,
-                          ),
-                          const SizedBox(height: AppSpacing.space16),
-                          _buildCueSection(),
-                        ],
-                      ),
-              ),
-
-              const SizedBox(height: AppSpacing.space24),
-
-              // Action Controls
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: AppSpacing.space12,
-                runSpacing: AppSpacing.space12,
-                children: [
-                  // Toggle Tracing canvas
-                  ChunkyButton(
-                    icon: Icon(
-                      _showTracing ? Icons.visibility_rounded : Icons.gesture_rounded,
-                      size: 24.0,
-                      color: AppColors.textPrimary,
-                    ),
-                    text: _showTracing ? 'Lihat' : 'Tulis',
-                    fontSize: 16.0,
-                    height: 56.0,
-                    primaryColor: AppColors.cardSurface,
-                    bevelColor: AppColors.cardBevel,
-                    onPressed: () {
-                      setState(() => _showTracing = !_showTracing);
-                      SoundPlayer.instance.playPop();
-                    },
-                  ),
-                  // Match pairs mini-game (reff: Match the Letter drag)
-                  ChunkyButton(
-                    icon: const Icon(
-                      Icons.compare_arrows_rounded,
-                      size: 24.0,
-                      color: AppColors.textPrimary,
-                    ),
-                    text: 'Pasang',
-                    fontSize: 16.0,
-                    height: 56.0,
-                    primaryColor: AppColors.letterTint,
-                    bevelColor: AppColors.letterBevel,
-                    onPressed: () {
-                      SoundPlayer.instance.playPop();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => LetterMatchScreen(
-                            onBack: () => Navigator.of(context).pop(),
-                            onCompleted: () => Navigator.of(context).pop(),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  // Forward / Next letter
-                  ChunkyButton(
-                    icon: const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 24.0,
-                      color: AppColors.textWhite,
-                    ),
-                    text: 'Lanjut',
-                    fontSize: 16.0,
-                    height: 56.0,
-                    primaryColor: AppColors.brandMint,
-                    bevelColor: AppColors.brandMintDark,
-                    onPressed: _nextLetter,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.space16),
-            ],
-          ),
+          child: _isTracingStep
+              ? _buildTracingStage()
+              : _isMatchingStep
+                  ? _buildMatchingStage()
+                  : _buildQuizStage(),
         ),
       ),
     );
   }
 
-  Widget _buildLetterOrTracingSection() {
-    if (_showTracing) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Stage 1: Guided Tracing (Tebalkan Huruf Terintegrasi)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildTracingStage() {
+    final letter = _currentLetter;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Header & Audio Trigger
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Stroke-order hint (reff: numbered dots 1-2-3 on tracing guide)
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: AppSpacing.space8,
-              runSpacing: AppSpacing.space8,
-              children: [
-                _buildStrokeStep('1', 'Mulai'),
-                _buildStrokeStep('2', 'Ikuti'),
-                _buildStrokeStep('3', 'Selesai'),
-              ],
+            AudioPromptButton(
+              primaryColor: AppColors.letterTint,
+              borderColor: AppColors.letterPrimary,
+              bevelColor: AppColors.letterBevel,
+              onPressed: _playLetterAudio,
             ),
-            const SizedBox(height: AppSpacing.space12),
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                TracingCanvas(
-                  key: _tracingKey,
-                  letter: _currentLetter.char,
-                  width: 180.0,
-                  height: 180.0,
-                  onStrokeCompleted: () {
-                    SoundPlayer.instance.playSuccess();
-                    _praiseTimer?.cancel();
-                    _praiseTimer = Timer(const Duration(milliseconds: 350), () {
-                      if (mounted) SoundPlayer.instance.playPraise();
-                    });
-                  },
-                ),
-                Positioned(
-                  top: -10.0,
-                  right: -10.0,
-                  child: GestureDetector(
-                    onTap: () => _tracingKey.currentState?.clear(),
-                    child: Container(
-                      width: 40.0,
-                      height: 40.0,
-                      decoration: BoxDecoration(
-                        color: AppColors.cardSurface,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.letterPrimary,
-                          width: 2.5,
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: AppColors.letterBevel,
-                            offset: Offset(0, 3.0),
-                            blurRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.replay_rounded,
-                        size: 20.0,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(width: AppSpacing.space12),
+            Text(
+              'Tebalkan huruf ${letter.pairDisplay}!',
+              style: AppTypography.uiHeading(
+                fontSize: 22.0,
+                color: AppColors.textPrimary,
+              ),
             ),
           ],
         ),
-      );
-    }
+        const SizedBox(height: AppSpacing.space20),
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          _currentLetter.pairDisplay,
-          style: AppTypography.learningDisplay(
-            fontSize: 92.0,
-            color: AppColors.letterPrimary,
+        // Tracing Canvas with flowing dashes, pencil demo & proximity coverage
+        Center(
+          child: GuidedTracingCanvas(
+            key: _canvasKey,
+            char: letter.char,
+            strokeColor: AppColors.letterPrimary,
+            size: 290.0,
+            onProgressChanged: (p) {
+              final hasStrokes = p > 0 || (_canvasKey.currentState?.hasUserStrokes ?? false);
+              if (_hasUserProgress != hasStrokes) {
+                setState(() => _hasUserProgress = hasStrokes);
+              }
+            },
+            onCompleted: () {
+              setState(() {
+                _isTracingCompleted = true;
+                _hasUserProgress = true;
+              });
+              SoundPlayer.instance.playSuccess();
+              CelebrationPopup.show(
+                context: context,
+                title: 'Luar Biasa!',
+                subtitle: 'Huruf ${letter.pairDisplay} berhasil ditebalkan!',
+                buttonText: 'Lanjut Latihan',
+                onNextPressed: _advanceToNext,
+              );
+            },
           ),
         ),
+        const SizedBox(height: AppSpacing.space16),
+
+        // Single Combined Action Control: [ ▶ Contoh ]
+        ChunkyButton(
+          icon: const Icon(Icons.play_arrow_rounded, size: 20.0, color: AppColors.textSecondary),
+          text: 'Contoh',
+          primaryColor: AppColors.cardSurface,
+          bevelColor: AppColors.cardBevel,
+          textColor: AppColors.textSecondary,
+          fontSize: 14.0,
+          height: 44.0,
+          onPressed: () {
+            _canvasKey.currentState?.clear();
+            _canvasKey.currentState?.playDemo();
+            setState(() {
+              _isTracingCompleted = false;
+              _hasUserProgress = false;
+            });
+          },
+        ),
+        const SizedBox(height: AppSpacing.space24),
+
+        // Tombol CTA Adaptif: [ Tebalkan Dulu Ya ✏️ ] / [ Coba Lagi 🧽 ] / [ Lanjut Latihan ➜ ]
+        if (_isTracingCompleted)
+          SizedBox(
+            width: 260.0,
+            child: ChunkyButton(
+              text: 'Lanjut Latihan ➜',
+              primaryColor: AppColors.brandMint,
+              bevelColor: AppColors.brandMintDark,
+              textColor: AppColors.textWhite,
+              fontSize: 16.0,
+              height: 52.0,
+              onPressed: () {
+                SoundPlayer.instance.playSuccess();
+                _advanceToNext();
+              },
+            ),
+          )
+        else if (_hasUserProgress)
+          SizedBox(
+            width: 260.0,
+            child: ChunkyButton(
+              text: 'Coba Lagi 🧽',
+              primaryColor: AppColors.retryBackground,
+              bevelColor: AppColors.retryBevel,
+              textColor: const Color(0xFFC05621),
+              fontSize: 16.0,
+              height: 52.0,
+              onPressed: () {
+                SoundPlayer.instance.playEncouragement();
+                _canvasKey.currentState?.clear();
+                setState(() {
+                  _hasUserProgress = false;
+                  _isTracingCompleted = false;
+                });
+              },
+            ),
+          )
+        else
+          SizedBox(
+            width: 260.0,
+            child: ChunkyButton(
+              text: 'Tebalkan Dulu Ya ✏️',
+              primaryColor: AppColors.cardSurface,
+              bevelColor: AppColors.cardBevel,
+              textColor: AppColors.textSecondary,
+              fontSize: 16.0,
+              height: 52.0,
+              onPressed: () {
+                SoundPlayer.instance.playPromptTebalkan();
+                _canvasKey.currentState?.playDemo();
+              },
+            ),
+          ),
+        const SizedBox(height: AppSpacing.space16),
       ],
     );
   }
 
-  Widget _buildStrokeStep(String number, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      decoration: BoxDecoration(
-        color: AppColors.letterTint,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-        border: Border.all(color: AppColors.letterPrimary, width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 20.0,
-            height: 20.0,
-            decoration: const BoxDecoration(
-              color: AppColors.letterPrimary,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              number,
-              style: AppTypography.uiButton(
-                fontSize: 12.0,
-                color: AppColors.textWhite,
-              ),
-            ),
-          ),
-          const SizedBox(width: 4.0),
-          Text(
-            label,
-            style: AppTypography.uiBody(fontSize: 11.0),
-          ),
-        ],
-      ),
-    );
-  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Stage 2: Matching Uppercase to Lowercase (Latihan Pasangan Huruf Kapital & Kecil)
+  // ═══════════════════════════════════════════════════════════════════════════
 
-  Widget _buildCueSection() {
-    // Every letter gets a consistent clay visual (reff: A is for Apple).
-    // Cycle through the 10 real 3D assets so all 26 letters stay playful.
-    final fruitAsset =
-        AppAssets.countingObjects[_currentIndex % AppAssets.countingObjects.length];
+  Widget _buildMatchingStage() {
+    final letter = _currentLetter;
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Floating 3D Object with soft floor shadow (No enclosing box)
-        SizedBox(
-          width: 96.0,
-          height: 96.0,
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              // Contact floor shadow
-              Positioned(
-                bottom: 2.0,
-                child: Container(
-                  width: 64.0,
-                  height: 8.0,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
+        // Prompt Header & Audio Trigger (Minimalist)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AudioPromptButton(
+              primaryColor: AppColors.letterTint,
+              borderColor: AppColors.letterPrimary,
+              bevelColor: AppColors.letterBevel,
+              onPressed: _playLetterAudio,
+            ),
+            const SizedBox(width: AppSpacing.space12),
+            Text(
+              'Pasangkan huruf ${letter.char}! 🧩',
+              style: AppTypography.uiHeading(
+                fontSize: 22.0,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.space20),
+
+        // Panggung Huruf Besar (Hero Diorama Stage — Bebas Kartu)
+        DioramaStage(
+          stageColor: AppColors.letterPrimary,
+          floorShadowWidth: 120.0,
+          floorShadowHeight: 12.0,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.space12),
+          child: Text(
+            letter.char,
+            style: AppTypography.learningDisplay(
+              fontSize: 84.0,
+              color: AppColors.letterPrimary,
+            ).copyWith(
+              shadows: [
+                Shadow(
+                  color: AppColors.letterBevel.withValues(alpha: 0.35),
+                  offset: const Offset(0, 5.0),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.space24),
+
+        // 4 Kartu Pilihan Huruf Kecil (Ukuran Seragam Simetris / Anti-Sosis)
+        Row(
+          children: _quizOptions.map((option) {
+            final isSelected = _selectedOption == option;
+            final isCorrect = isSelected && option == letter.lowercaseChar;
+
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: FlashcardAnswer(
+                  text: option,
+                  isSelected: isSelected,
+                  isCorrect: isCorrect,
+                  height: 72.0,
+                  onTap: () => _handleOptionTap(option),
                 ),
               ),
-              Positioned(
-                bottom: 6.0,
-                child: Image.asset(
-                  fruitAsset,
-                  width: 84.0,
-                  height: 84.0,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => Icon(
-                    _currentLetter.icon,
-                    size: 64.0,
-                    color: AppColors.letterPrimary,
-                  ),
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: AppSpacing.space24),
+
+        // Evaluasi Jawaban / Dorongan Coba Lagi
+        if (!_isAnswerCorrect && _selectedOption != null)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const MascotWidget(
+                mood: MascotMood.thinking,
+                size: 40.0,
+                animate: true,
+              ),
+              const SizedBox(width: AppSpacing.space8),
+              Text(
+                'Yuk coba lagi! 🤗',
+                style: AppTypography.uiHeading(
+                  fontSize: 16.0,
+                  color: const Color(0xFFC05621),
                 ),
               ),
             ],
           ),
+
+        const SizedBox(height: AppSpacing.space16),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Stage 3-5: Audio-to-Letter Quiz (Kuis Pengenalan Huruf Interaktif)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  Widget _buildQuizStage() {
+    final letter = _currentLetter;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Prompt Header & Audio Trigger
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AudioPromptButton(
+              primaryColor: AppColors.letterTint,
+              borderColor: AppColors.letterPrimary,
+              bevelColor: AppColors.letterBevel,
+              onPressed: _playLetterAudio,
+            ),
+            const SizedBox(width: AppSpacing.space12),
+            Text(
+              'Mana huruf ${letter.pairDisplay}?',
+              style: AppTypography.uiHeading(
+                fontSize: 22.0,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: AppSpacing.space8),
-        Text(
-          '${_currentLetter.char} is for ${_currentLetter.exampleWord}',
-          textAlign: TextAlign.center,
-          style: AppTypography.uiHeading(
-            fontSize: 20.0,
-            color: AppColors.textPrimary,
+        const SizedBox(height: AppSpacing.space20),
+
+        // Objek Cues Interaktif di Panggung (Airy Stage dengan Suara Benda Saat Ditekan)
+        Container(
+          width: 280,
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.space16,
+            horizontal: AppSpacing.space12,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.letterPrimary.withValues(alpha: 0.08),
+            borderRadius: const BorderRadius.all(Radius.elliptical(140, 105)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() => _isObjectTapped = true);
+                  SoundPlayer.instance.playSquish();
+                  SoundPlayer.instance.playWord(letter.exampleWord);
+                  _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
+                    if (mounted) setState(() => _isObjectTapped = false);
+                  }));
+                },
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedScale(
+                  scale: _isObjectTapped ? 1.20 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.elasticOut,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (letter.imageAsset != null)
+                        Image.asset(
+                          letter.imageAsset!,
+                          width: 140.0,
+                          height: 140.0,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => Text(
+                            letter.emoji.isNotEmpty ? letter.emoji : '🍎',
+                            style: const TextStyle(fontSize: 90),
+                          ),
+                        )
+                      else
+                        Text(
+                          letter.emoji.isNotEmpty ? letter.emoji : '🍎',
+                          style: const TextStyle(fontSize: 90),
+                        ),
+                      const SizedBox(height: 6),
+                      // Floor contact shadow
+                      Container(
+                        width: 90,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: AppColors.letterBevel.withValues(alpha: 0.20),
+                          borderRadius: const BorderRadius.all(Radius.elliptical(45, 6)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${letter.char} untuk ${letter.exampleWord}',
+                style: AppTypography.uiHeading(fontSize: 16.0).copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.touch_app_rounded, size: 14, color: AppColors.letterPrimary),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      'Ketuk untuk mendengar',
+                      style: AppTypography.uiBody(
+                        fontSize: 12.0,
+                        color: AppColors.letterPrimary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        Text(
-          'Dengar bunyinya: ${_currentLetter.phonic} • ${_currentLetter.name}',
-          textAlign: TextAlign.center,
-          style: AppTypography.uiBody(
-            fontSize: 13.0,
-            color: AppColors.textSecondary,
-          ),
+
+        const SizedBox(height: AppSpacing.space24),
+
+        // 4 Kartu Pilihan Jawaban Horizontal Simetris (Ukuran Seragam / Anti-Sosis)
+        Row(
+          children: _quizOptions.map((option) {
+            final isSelected = _selectedOption == option;
+            final isCorrect = isSelected && option == letter.char;
+
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: FlashcardAnswer(
+                  text: option,
+                  isSelected: isSelected,
+                  isCorrect: isCorrect,
+                  height: 72.0,
+                  onTap: () => _handleOptionTap(option),
+                ),
+              ),
+            );
+          }).toList(),
         ),
+
+        const SizedBox(height: AppSpacing.space24),
+
+        // Evaluasi Jawaban / Dorongan Coba Lagi
+        if (!_isAnswerCorrect && _selectedOption != null)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.space16,
+              vertical: AppSpacing.space12,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+              border: Border.all(
+                color: const Color(0xFFFFD8A8),
+                width: 2.0,
+              ),
+            ),
+            child: Row(
+              children: [
+                const MascotWidget(
+                  mood: MascotMood.thinking,
+                  size: 46.0,
+                  animate: true,
+                ),
+                const SizedBox(width: AppSpacing.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Yuk coba lagi!',
+                        style: AppTypography.uiHeading(
+                          fontSize: 16.0,
+                          color: const Color(0xFFC05621),
+                        ),
+                      ),
+                      Text(
+                        'Dengarkan suaranya dan pilih lagi ya.',
+                        style: AppTypography.uiBody(
+                          fontSize: 13.0,
+                          color: const Color(0xFF9C4221),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        const SizedBox(height: AppSpacing.space16),
       ],
     );
   }

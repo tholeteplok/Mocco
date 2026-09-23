@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/tokens/app_colors.dart';
-import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/sound_player.dart';
+import '../mascot/mascot_widget.dart';
 
 enum MapNodeStatus {
   locked,
@@ -165,22 +165,14 @@ class _MapNodeButtonState extends State<MapNodeButton>
                 ),
               ),
 
-            // Top flag for Active node
+            // Perched Exploring Mascot for Active node (Living Navigator)
             if (isActive)
-              Positioned(
-                top: -14.0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
-                  decoration: BoxDecoration(
-                    color: AppColors.retryBevel,
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusSmall),
-                    border: Border.all(color: AppColors.textPrimary, width: 1.5),
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow_rounded,
-                    size: 16.0,
-                    color: AppColors.textPrimary,
-                  ),
+              const Positioned(
+                top: -112.0,
+                child: MascotWidget(
+                  mood: MascotMood.exploring,
+                  size: 130.0,
+                  animate: true,
                 ),
               ),
 

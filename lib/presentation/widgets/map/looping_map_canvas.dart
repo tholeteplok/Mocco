@@ -141,20 +141,52 @@ class LoopingMapCanvas extends StatelessWidget {
     final nodeLeft = (screenWidth * turn.dx) - (nodeSize / 2);
     final nodeTop = topPadding + (tileIndex * tileHeight) + (tileHeight * turn.dy) - (nodeSize / 2);
 
+    final nodeButton = MapNodeButton(
+      label: node.label,
+      status: node.status,
+      size: nodeSize,
+      primaryColor: isCurrentActive ? AppColors.retryBevel : node.primaryColor,
+      bevelColor: isCurrentActive ? const Color(0xFFD9A91E) : node.bevelColor,
+      onTap: (node.status == MapNodeStatus.active || node.status == MapNodeStatus.completed)
+          ? () => onNodeTap(index)
+          : () => SoundPlayer.instance.playSoftRetry(),
+    );
+
+    if (isCurrentActive) {
+      const mascotSize = 130.0;
+      const mascotTop = 112.0;
+      return Positioned(
+        key: node.nodeKey,
+        left: nodeLeft - (mascotSize - nodeSize) / 2,
+        top: nodeTop - mascotTop,
+        width: mascotSize,
+        height: mascotTop + nodeSize,
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            SoundPlayer.instance.playPop();
+            onNodeTap(index);
+          },
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              Positioned(
+                top: mascotTop,
+                left: (mascotSize - nodeSize) / 2,
+                child: nodeButton,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Positioned(
       key: node.nodeKey,
       left: nodeLeft,
       top: nodeTop,
-      child: MapNodeButton(
-        label: node.label,
-        status: node.status,
-        size: nodeSize,
-        primaryColor: isCurrentActive ? AppColors.retryBevel : node.primaryColor,
-        bevelColor: isCurrentActive ? const Color(0xFFD9A91E) : node.bevelColor,
-        onTap: (node.status == MapNodeStatus.active || node.status == MapNodeStatus.completed)
-            ? () => onNodeTap(index)
-            : () => SoundPlayer.instance.playSoftRetry(),
-      ),
+      child: nodeButton,
     );
   }
 }

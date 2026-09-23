@@ -121,79 +121,81 @@ class _JourneyScreenState extends State<JourneyScreen> {
   void _launchActivity(JourneyNode node) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => NodeDetailScreen(
+        builder: (nodeContext) => NodeDetailScreen(
           node: node,
           onStartActivity: () {
-            Navigator.of(context).pop();
-            _startNodeExercise(node);
+            _startNodeExercise(node, nodeContext);
           },
-          onBack: () => Navigator.of(context).pop(),
+          onBack: () => Navigator.of(nodeContext).pop(),
         ),
       ),
     );
   }
 
-  void _startNodeExercise(JourneyNode node) {
+  void _startNodeExercise(JourneyNode node, BuildContext nodeContext) {
     switch (node.type) {
       case NodeType.numbers:
-        _launchCounting(node);
+        _launchCounting(node, nodeContext);
       case NodeType.letters:
-        _launchLetter(node);
+        _launchLetter(node, nodeContext);
       case NodeType.words:
-        _launchBlending(node);
+        _launchBlending(node, nodeContext);
     }
   }
 
-  void _launchCounting(JourneyNode node) {
-    Navigator.of(context).push(
+  void _launchCounting(JourneyNode node, BuildContext nodeContext) {
+    Navigator.of(nodeContext).push(
       MaterialPageRoute(
-        builder: (_) => CountingScreen(
+        builder: (exerciseContext) => CountingScreen(
           totalSteps: 5,
           targetNumber: node.typeIndex,
           generator: CountingQuestionGenerator(
             fixedTargetCount: node.typeIndex,
           ),
           onCompleted: () {
-            Navigator.of(context).pop();
+            Navigator.of(exerciseContext).pop();
+            Navigator.of(nodeContext).pop();
             _unlockNextNode(node);
           },
-          onBack: () => Navigator.of(context).pop(),
+          onBack: () => Navigator.of(exerciseContext).pop(),
         ),
       ),
     );
   }
 
-  void _launchLetter(JourneyNode node) {
-    Navigator.of(context).push(
+  void _launchLetter(JourneyNode node, BuildContext nodeContext) {
+    Navigator.of(nodeContext).push(
       MaterialPageRoute(
-        builder: (_) => LetterOnboardingScreen(
+        builder: (exerciseContext) => LetterOnboardingScreen(
           letterIndex: node.typeIndex,
           onCompleted: () {
-            Navigator.of(context).pop();
+            Navigator.of(exerciseContext).pop();
+            Navigator.of(nodeContext).pop();
             _unlockNextNode(node);
           },
-          onBack: () => Navigator.of(context).pop(),
+          onBack: () => Navigator.of(exerciseContext).pop(),
         ),
       ),
     );
   }
 
-  void _launchBlending(JourneyNode node) {
+  void _launchBlending(JourneyNode node, BuildContext nodeContext) {
     final words = WordCatalog.defaultWords;
     // Sajikan hanya kata yang sesuai dengan node ini
     final wordList = (node.typeIndex >= 0 && node.typeIndex < words.length)
         ? [words[node.typeIndex]]
         : [words.first];
 
-    Navigator.of(context).push(
+    Navigator.of(nodeContext).push(
       MaterialPageRoute(
-        builder: (_) => SyllableBlendingScreen(
+        builder: (exerciseContext) => SyllableBlendingScreen(
           words: wordList,
           onCompleted: () {
-            Navigator.of(context).pop();
+            Navigator.of(exerciseContext).pop();
+            Navigator.of(nodeContext).pop();
             _unlockNextNode(node);
           },
-          onBack: () => Navigator.of(context).pop(),
+          onBack: () => Navigator.of(exerciseContext).pop(),
         ),
       ),
     );

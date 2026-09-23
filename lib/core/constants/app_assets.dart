@@ -4,6 +4,7 @@ abstract final class AppAssets {
   static const String _images = 'assets/images';
   static const String _objects = '$_images/objects';
   static const String _ui = '$_images/ui';
+  static const String _mascot = '$_images/mascot';
   static const String _audio = 'assets/audio';
   static const String _sfx = '$_audio/sfx';
   static const String _voice = '$_audio/voice';
@@ -38,10 +39,23 @@ abstract final class AppAssets {
   static const String orangeClay = fruitOrange;
   static const String basketClay = '$_ui/basket_clay.jpg';
 
+  // --- 3D Clay Mascot (Living Companion — Mocco) ---
+  static const String mascotGreeting = '$_mascot/mascot_greeting.png';
+  static const String mascotReading = '$_mascot/mascot_reading.png';
+  static const String mascotCelebrate = '$_mascot/mascot_celebrate.png';
+  static const String mascotLove = '$_mascot/mascot_love.png';
+  static const String mascotThinking = '$_mascot/mascot_thinking.png';
+  static const String mascotThumbsUp = '$_mascot/mascot_thumbs_up.png';
+  static const String mascotCrawling = '$_mascot/mascot_crawling.png';
+  static const String mascotSleeping = '$_mascot/mascot_sleeping.png';
+  static const String mascotExploring = '$_mascot/mascot_exploring.png';
+
+  // Backward-compatibility aliases
+  static const String mascotIdle = mascotGreeting;
+  static const String mascotJump = mascotCelebrate;
+
   // --- UI Assets ---
   static const String mapCanvasBg = '$_ui/map_canvas_loop.png';
-  static const String mascotIdle = '$_ui/mascot_idle.png';
-  static const String mascotJump = '$_ui/mascot_jump.png';
   static const String badgeStamp = '$_ui/badge_stamp.png';
 
   // --- SFX (Tactile Sound Effects) ---
@@ -63,4 +77,5 @@ abstract final class AppAssets {
   static const String voiceBagus = '$_voice/bagus.mp3';
   static const String voiceCobaLagi = '$_voice/coba_lagi.mp3';
   static const String voiceHitung = '$_voice/hitung.mp3';
+  static const String voiceTebalkanDuluYa = '$_voice/tebalkan_dulu_ya.mp3';
 }

@@ -177,6 +177,7 @@ class _InteractiveHeroStage extends StatefulWidget {
 
 class _InteractiveHeroStageState extends State<_InteractiveHeroStage> {
   final Set<int> _tappedIndices = <int>{};
+  bool _isLetterObjectTapped = false;
 
   void _handleItemTap(int index) {
     if (_tappedIndices.contains(index)) return;
@@ -398,42 +399,151 @@ class _InteractiveHeroStageState extends State<_InteractiveHeroStage> {
         final letters = LetterEntity.alphabet;
         if (widget.node.typeIndex < letters.length) {
           final letter = letters[widget.node.typeIndex];
-          return GestureDetector(
-            onTap: () {
-              SoundPlayer.instance.playPop();
-              SoundPlayer.instance.playLetterPhonic(letter.char);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.90),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-                border: Border.all(
-                  color: color.withValues(alpha: 0.3),
-                  width: 2.0,
+          final isTapped = _isLetterObjectTapped;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Sentuh benda untuk mengenal huruf! 👇',
+                style: AppTypography.uiBody(
+                  fontSize: 13,
+                  color: isTapped ? AppColors.brandMintDark : AppColors.textSecondary,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.node.bevelColor.withValues(alpha: 0.15),
-                    offset: const Offset(0, 3),
-                    blurRadius: 0,
-                  ),
-                ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(letter.icon, size: 30, color: color),
-                  const SizedBox(width: 8),
-                  Text(
-                    letter.exampleWord,
-                    style: AppTypography.uiHeading(fontSize: 20).copyWith(color: AppColors.textPrimary),
+              const SizedBox(height: AppSpacing.space12),
+
+              GestureDetector(
+                onTap: () {
+                  setState(() => _isLetterObjectTapped = true);
+                  SoundPlayer.instance.playSquish();
+                  SoundPlayer.instance.playWord(letter.exampleWord);
+                  Future.delayed(const Duration(milliseconds: 300), () {
+                    if (mounted) setState(() => _isLetterObjectTapped = false);
+                  });
+                },
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedScale(
+                  scale: isTapped ? 1.25 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.elasticOut,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          if (letter.imageAsset != null)
+                            Image.asset(
+                              letter.imageAsset!,
+                              width: 140.0,
+                              height: 140.0,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => Text(
+                                letter.emoji.isNotEmpty ? letter.emoji : '🍎',
+                                style: const TextStyle(fontSize: 90),
+                              ),
+                            )
+                          else
+                            Text(
+                              letter.emoji.isNotEmpty ? letter.emoji : '🍎',
+                              style: const TextStyle(fontSize: 90),
+                            ),
+
+                          if (isTapped)
+                            Positioned(
+                              top: -6,
+                              right: -6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: widget.node.bevelColor.withValues(alpha: 0.35),
+                                      offset: const Offset(0, 2),
+                                      blurRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.check_rounded,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // Soft Diorama Floor Contact Shadow
+                      Container(
+                        width: 96,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: widget.node.bevelColor.withValues(alpha: 0.22),
+                          borderRadius: const BorderRadius.all(
+                            Radius.elliptical(48, 6),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Icon(Icons.volume_up_rounded, size: 18, color: color.withValues(alpha: 0.7)),
-                ],
+                ),
               ),
-            ),
+
+              const SizedBox(height: AppSpacing.space12),
+
+              // Pill label: "A untuk Apel" + "Bunyi: /a/"
+              GestureDetector(
+                onTap: () {
+                  SoundPlayer.instance.playSquish();
+                  SoundPlayer.instance.playWord(letter.exampleWord);
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                    border: Border.all(
+                      color: color.withValues(alpha: 0.3),
+                      width: 2.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.node.bevelColor.withValues(alpha: 0.15),
+                        offset: const Offset(0, 3),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${letter.char} untuk ${letter.exampleWord}',
+                        style: AppTypography.uiHeading(fontSize: 18).copyWith(color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                        ),
+                        child: Text(
+                          letter.phonic,
+                          style: AppTypography.uiButton(fontSize: 13).copyWith(color: color),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         }
         return const SizedBox.shrink();

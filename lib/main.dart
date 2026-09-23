@@ -4,7 +4,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import 'core/theme/app_theme.dart';
 import 'data/datasources/mastery_local_datasource.dart';
-import 'presentation/screens/journey/journey_screen.dart';
+import 'presentation/screens/splash/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +26,7 @@ class MoccoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
-      home: const JourneyScreen(),
+      home: const SplashScreen(),
     );
   }
 }

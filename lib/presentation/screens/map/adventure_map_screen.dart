@@ -9,6 +9,7 @@ import '../../widgets/buttons/chunky_button.dart';
 import '../../widgets/dialogs/parent_gate_dialog.dart';
 import '../../widgets/map/looping_map_canvas.dart';
 import '../../widgets/map/map_node_button.dart';
+import '../../widgets/mascot/mascot_widget.dart';
 import '../../../domain/services/counting_question_generator.dart';
 import '../../../domain/services/word_catalog.dart';
 import '../blending/syllable_blending_screen.dart';
@@ -339,6 +340,12 @@ class _AdventureMapScreenState extends State<AdventureMapScreen> {
                       ),
                       child: Row(
                         children: [
+                          const MascotWidget(
+                            mood: MascotMood.crawling,
+                            size: 40.0,
+                            animate: true,
+                          ),
+                          const SizedBox(width: AppSpacing.space8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

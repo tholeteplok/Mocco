@@ -27,6 +27,8 @@ abstract final class AppColors {
   static const Color blendingBevel = Color(0xFF5DA361);
 
   // --- Feedback & Gamification (Pinterest Dopamine Standard) ---
+  static const Color brandOrange = Color(0xFFFF9F1C); // Warm Honeycomb Brand Orange
+  static const Color brandOrangeDark = Color(0xFFE08628); // Brand Orange Bevel
   static const Color brandMint = Color(0xFF2EC4B6); // Luminous Mint Green (Success & Next CTA)
   static const Color brandMintDark = Color(0xFF25A296); // Bevel for Mint buttons
   static const Color successBackground = Color(0xFF2EC4B6);

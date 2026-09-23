@@ -13,6 +13,7 @@ import '../../widgets/buttons/bubble_icon_button.dart';
 import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/jelly_progress_bar.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
+import '../../widgets/stage/diorama_stage.dart';
 
 /// Syllable Blending & Word Assembly Screen (Spec §1.4, Design System V12, V18)
 /// Designed exclusively for pre-readers: 100% icon-driven, auditory prompts,
@@ -134,12 +135,13 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
 
       _blendAnimController.forward();
       SoundPlayer.instance.playSuccess();
-      _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
-        if (mounted) SoundPlayer.instance.playWord(_currentWord.word);
-      }));
-      _activeTimers.add(Timer(const Duration(milliseconds: 800), () {
-        if (mounted) SoundPlayer.instance.playPraise();
-      }));
+      CelebrationPopup.show(
+        context: context,
+        title: 'Hebat Sekali!',
+        subtitle: 'Kata "${_currentWord.word}" berhasil dirangkai!',
+        buttonText: 'Lanjut',
+        onNextPressed: _advanceToNext,
+      );
     } else {
       // Incorrect: gentle retry sound & soft bounce back
       SoundPlayer.instance.playSoftRetry();
@@ -215,49 +217,44 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
 
           const Spacer(),
 
-          // Target Object Showcase (Visual Picture Card - 3D Clay Aesthetic)
+          // Target Object Showcase (Living Diorama Stage — Bebas Kartu)
           GestureDetector(
             onTap: () {
               SoundPlayer.instance.playPop();
               _playWordAudio();
             },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              width: ResponsiveHelper.value(context, mobile: 140.0, tablet: 180.0),
-              height: ResponsiveHelper.value(context, mobile: 140.0, tablet: 180.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
-                border: Border.all(
-                  color: AppColors.blendingPrimary,
-                  width: 3.5,
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.blendingBevel,
-                    offset: Offset(0, 6.0),
-                    blurRadius: 0.0,
-                  ),
-                ],
-              ),
-              child: Center(
+            child: DioramaStage(
+              stageColor: AppColors.blendingPrimary,
+              floorShadowWidth: ResponsiveHelper.value(context, mobile: 110.0, tablet: 140.0),
+              floorShadowHeight: 10.0,
+              padding: EdgeInsets.zero,
+              child: AnimatedScale(
+                scale: _isSuccess ? 1.15 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.elasticOut,
                 child: Container(
-                  width: ResponsiveHelper.value(context, mobile: 104.0, tablet: 136.0),
-                  height: ResponsiveHelper.value(context, mobile: 104.0, tablet: 136.0),
+                  width: ResponsiveHelper.value(context, mobile: 110.0, tablet: 140.0),
+                  height: ResponsiveHelper.value(context, mobile: 110.0, tablet: 140.0),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.blendingTint,
+                    color: Colors.white,
                     border: Border.all(
                       color: AppColors.blendingPrimary.withValues(alpha: 0.4),
-                      width: 2.0,
+                      width: 3.5,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.blendingBevel.withValues(alpha: 0.25),
+                        offset: const Offset(0, 4.0),
+                        blurRadius: 0.0,
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Icon(
                       _currentWord.icon,
-                      size: ResponsiveHelper.value(context, mobile: 64.0, tablet: 84.0),
-                      color: AppColors.blendingBevel,
+                      size: ResponsiveHelper.value(context, mobile: 64.0, tablet: 80.0),
+                      color: AppColors.blendingPrimary,
                     ),
                   ),
                 ),
@@ -265,7 +262,7 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
             ),
           ),
 
-          const SizedBox(height: AppSpacing.space24),
+          const SizedBox(height: AppSpacing.space16),
 
           // Word Assembly Slots (with animated merge/slide)
           AnimatedBuilder(
@@ -288,20 +285,9 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
             },
           ),
 
-          // Success celebration (consistent dopamine loop with other screens)
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _isSuccess
-                ? CelebrationBanner(
-                    key: const ValueKey('blending-celebration'),
-                    title: 'Hebat Sekali!',
-                    subtitle: 'Kata "${_currentWord.word}" berhasil dirangkai!',
-                    onNextPressed: _advanceToNext,
-                  )
-                : const SizedBox(
-                    key: ValueKey('blending-spacer'),
-                    height: 12.0,
-                  ),
+          const SizedBox(
+            key: ValueKey('blending-spacer'),
+            height: 12.0,
           ),
 
           const Spacer(),

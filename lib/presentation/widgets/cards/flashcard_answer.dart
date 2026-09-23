@@ -18,6 +18,7 @@ class FlashcardAnswer extends StatelessWidget {
     this.isCorrect = false,
     this.width,
     this.height,
+    this.borderRadius,
   });
 
   final String text;
@@ -30,6 +31,7 @@ class FlashcardAnswer extends StatelessWidget {
   final bool isCorrect;
   final double? width;
   final double? height;
+  final BorderRadius? borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +51,7 @@ class FlashcardAnswer extends StatelessWidget {
       state: state,
       height: height ?? 68.0,
       fontSize: 28.0,
+      borderRadius: borderRadius,
     );
 
     if (width != null) {

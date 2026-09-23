@@ -19,6 +19,7 @@ class AnswerChoiceTile extends StatefulWidget {
     this.state = AnswerTileState.normal,
     this.height = 68.0,
     this.fontSize = 32.0,
+    this.borderRadius,
   });
 
   final String text;
@@ -26,6 +27,7 @@ class AnswerChoiceTile extends StatefulWidget {
   final AnswerTileState state;
   final double height;
   final double fontSize;
+  final BorderRadius? borderRadius;
 
   @override
   State<AnswerChoiceTile> createState() => _AnswerChoiceTileState();
@@ -133,7 +135,7 @@ class _AnswerChoiceTileState extends State<AnswerChoiceTile>
           height: widget.height,
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+            borderRadius: widget.borderRadius ?? BorderRadius.circular(AppSpacing.radiusCard),
             border: Border.all(
               color: borderColor,
               width: 2.0,

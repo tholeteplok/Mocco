@@ -41,9 +41,9 @@ void main() {
       final canvasWidget = tester.widget<GuidedTracingCanvas>(canvasFinder);
       expect(canvasWidget.char, equals('10'));
 
-      // Verifies controls: [ ▶ Contoh ] and [ 🧽 Hapus ]
-      expect(find.text('▶ Contoh'), findsOneWidget);
-      expect(find.text('🧽 Hapus'), findsOneWidget);
+      // Verifies combined control: [ ▶ Contoh ]
+      expect(find.text('Contoh'), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
     });
 
     testWidgets('CountingScreen with targetNumber: null skips tracing completely', (tester) async {

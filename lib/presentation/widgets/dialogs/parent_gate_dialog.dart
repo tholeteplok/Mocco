@@ -4,6 +4,7 @@ import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/sound_player.dart';
+import '../mascot/mascot_widget.dart';
 
 /// Parent Gate Dialog with "Hold 3s" protection (V9, V25, V29)
 /// Protects exit and adult settings from accidental child presses.
@@ -91,11 +92,12 @@ class _ParentGateDialogState extends State<ParentGateDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Lock Icon
-              const Icon(
-                Icons.lock_rounded,
-                size: 56.0,
-                color: AppColors.numberPrimary,
+              // Warm Mascot Security Gate (Protective Love)
+              const MascotWidget(
+                mood: MascotMood.love,
+                size: 72.0,
+                animate: true,
+                showShadow: true,
               ),
               const SizedBox(height: AppSpacing.space16),
 

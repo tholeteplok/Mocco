@@ -4,11 +4,37 @@ import '../constants/app_assets.dart';
 
 /// Centralized Sound & Audio Service for Mocco (V7, V8, V14, V31, V34)
 class SoundPlayer {
-  SoundPlayer._();
+  SoundPlayer._() {
+    _initAudioContext();
+  }
   static final SoundPlayer instance = SoundPlayer._();
 
   final AudioPlayer _sfxPlayer = AudioPlayer();
   final AudioPlayer _voicePlayer = AudioPlayer();
+
+  void _initAudioContext() {
+    try {
+      AudioPlayer.global.setAudioContext(
+        AudioContext(
+          android: const AudioContextAndroid(
+            isSpeakerphoneOn: true,
+            stayAwake: false,
+            contentType: AndroidContentType.sonification,
+            usageType: AndroidUsageType.assistanceSonification,
+            audioFocus: AndroidAudioFocus.none,
+          ),
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: const {
+              AVAudioSessionOptions.mixWithOthers,
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error configuring global audio context: $e');
+    }
+  }
 
   bool _isMuted = false;
   bool get isMuted => _isMuted;
@@ -131,6 +157,11 @@ class SoundPlayer {
   /// Speaks counting prompt ("Ayo hitung buahnya!")
   Future<void> playPromptCount() async {
     await playVoice(AppAssets.voiceHitung);
+  }
+
+  /// Speaks tracing prompt ("Tebalkan dulu ya")
+  Future<void> playPromptTebalkan() async {
+    await playVoice(AppAssets.voiceTebalkanDuluYa);
   }
 
   void dispose() {

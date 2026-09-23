@@ -9,8 +9,8 @@ import '../../../domain/entities/letter_entity.dart';
 import '../../../domain/services/letter_distractor_generator.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/buttons/chunky_button.dart';
-import '../../widgets/cards/chunky_card.dart';
 import '../../widgets/cards/flashcard_answer.dart';
+import '../../widgets/stage/diorama_stage.dart';
 import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
@@ -106,9 +106,17 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
       // Correct answer! Child keeps full control — no auto-advance.
       setState(() => _isAnswerCorrect = true);
       SoundPlayer.instance.playSuccess();
-      _activeTimers.add(Timer(const Duration(milliseconds: 350), () {
+      _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
         if (mounted) SoundPlayer.instance.playPraise();
       }));
+      CelebrationPopup.show(
+        context: context,
+        title: 'Hebat Sekali!',
+        subtitle:
+            '${_targetLetter.pairDisplay} yang tepat! Bunyinya ${_targetLetter.phonic}',
+        buttonText: _currentStep < widget.totalSteps ? 'Lanjut' : 'Selesai',
+        onNextPressed: _advanceToNext,
+      );
     } else {
       // Soft retry - anti frustration (V0.4)
       SoundPlayer.instance.playSoftRetry();
@@ -127,11 +135,7 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
         primaryColor: AppColors.letterPrimary,
         tintColor: AppColors.letterTint,
         bevelColor: AppColors.letterBevel,
-        isMuted: SoundPlayer.instance.isMuted,
         onBack: widget.onBack,
-        onAudioToggle: () {
-          setState(() => SoundPlayer.instance.toggleMute());
-        },
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -139,16 +143,16 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Prompt Question Card (Pure White Surface)
-              ChunkyCard(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.space24,
-                  vertical: AppSpacing.space24,
-                ),
+              // Hero Acoustic Sound Stage (Bebas Kartu — Living Stage)
+              DioramaStage(
+                stageColor: AppColors.letterPrimary,
+                floorShadowWidth: 140.0,
+                floorShadowHeight: 14.0,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AudioPromptButton(
+                      size: 80.0,
                       primaryColor: AppColors.letterTint,
                       borderColor: AppColors.letterPrimary,
                       bevelColor: AppColors.letterBevel,
@@ -156,13 +160,24 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
                         SoundPlayer.instance.playLetterName(_targetLetter.char);
                       },
                     ),
-                    const SizedBox(height: AppSpacing.space16),
-                    Text(
-                      'Pilih huruf yang kamu dengar!',
-                      style: AppTypography.uiHeading(
-                        fontSize: 22.0,
-                        color: AppColors.textPrimary,
-                      ),
+                    const SizedBox(height: AppSpacing.space12),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.volume_up_rounded,
+                          size: 20.0,
+                          color: AppColors.letterPrimary,
+                        ),
+                        const SizedBox(width: AppSpacing.space8),
+                        Text(
+                          'Dengarkan bunyinya 🎵',
+                          style: AppTypography.uiHeading(
+                            fontSize: 18.0,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -218,13 +233,7 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
                   );
                 },
                 child: _isAnswerCorrect
-                    ? CelebrationBanner(
-                        key: const ValueKey('celebration'),
-                        title: 'Hebat Sekali!',
-                        subtitle:
-                            '${_targetLetter.pairDisplay} yang tepat! Bunyinya ${_targetLetter.phonic}',
-                        onNextPressed: _advanceToNext,
-                      )
+                    ? const SizedBox(key: ValueKey('celebration'), height: 72.0)
                     : Row(
                         key: const ValueKey('navigation'),
                         mainAxisAlignment: MainAxisAlignment.center,

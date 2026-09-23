@@ -4,6 +4,7 @@ import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
 import '../../widgets/cards/chunky_card.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
+import '../../widgets/mascot/mascot_widget.dart';
 
 /// Rewards shelf (reff: Stars Earned + badges + prize feel).
 class RewardsScreen extends StatelessWidget {
@@ -34,10 +35,10 @@ class RewardsScreen extends StatelessWidget {
               borderColor: AppColors.retryBevel.withValues(alpha: 0.5),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.star_rounded,
-                    size: 48.0,
-                    color: AppColors.retryBevel,
+                  const MascotWidget(
+                    mood: MascotMood.thumbsUp,
+                    size: 64.0,
+                    animate: true,
                   ),
                   const SizedBox(width: AppSpacing.space12),
                   Expanded(
@@ -57,6 +58,11 @@ class RewardsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
+                  const Icon(
+                    Icons.star_rounded,
+                    size: 40.0,
+                    color: AppColors.retryBevel,
                   ),
                 ],
               ),

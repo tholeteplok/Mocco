@@ -66,4 +66,18 @@ abstract final class AppTypography {
       color: color,
     );
   }
+
+  /// Brand display text (Fredoka font matching icon launcher)
+  static TextStyle brandTitle({
+    double fontSize = 48.0,
+    Color color = AppColors.brandOrange,
+  }) {
+    return GoogleFonts.fredoka(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w800,
+      color: color,
+      letterSpacing: 1.2,
+    );
+  }
 }
+

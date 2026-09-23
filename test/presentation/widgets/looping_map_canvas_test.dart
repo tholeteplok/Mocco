@@ -38,8 +38,11 @@ void main() {
       // Verify all 14 nodes are present
       expect(find.byType(MapNodeButton), findsNWidgets(14));
 
-      // Verify images rendered (3 tiles)
-      expect(find.byType(Image), findsNWidgets(3));
+      // Verify background canvas tiles rendered (3 tiles)
+      expect(
+        find.image(const AssetImage('assets/images/ui/map_canvas_loop.png')),
+        findsNWidgets(3),
+      );
     });
 
     testWidgets('triggers onNodeTap when tapping completed node (replay feature)', (tester) async {

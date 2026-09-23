@@ -9,10 +9,10 @@ import '../../../domain/entities/counting_question.dart';
 import '../../../domain/services/counting_question_generator.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/buttons/chunky_button.dart';
-import '../../widgets/cards/chunky_card.dart';
 import '../../widgets/cards/flashcard_answer.dart';
 import '../../widgets/counting/counting_basket.dart';
 import '../../widgets/counting/counting_floating_area.dart';
+import '../../widgets/stage/diorama_stage.dart';
 import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
@@ -57,6 +57,7 @@ class _CountingScreenState extends State<CountingScreen> {
   final Set<int> _countedItemIds = <int>{};
   final List<Timer> _activeTimers = [];
   bool _isTracingCompleted = false;
+  bool _hasUserProgress = false;
 
   int? get _effectiveTargetNumber =>
       widget.targetNumber ?? widget.generator.fixedTargetCount;
@@ -92,6 +93,8 @@ class _CountingScreenState extends State<CountingScreen> {
       _selectedAnswer = -1;
       _isAnswerCorrect = false;
       _countedItemIds.clear();
+      _isTracingCompleted = false;
+      _hasUserProgress = false;
     });
   }
 
@@ -118,9 +121,16 @@ class _CountingScreenState extends State<CountingScreen> {
       // Correct! Child keeps full control — no auto-advance (v2.0 dopamine loop).
       setState(() => _isAnswerCorrect = true);
       SoundPlayer.instance.playSuccess();
-      _activeTimers.add(Timer(const Duration(milliseconds: 350), () {
+      _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
         if (mounted) SoundPlayer.instance.playPraise();
       }));
+      CelebrationPopup.show(
+        context: context,
+        title: 'Luar Biasa!',
+        subtitle: 'Kamu berhasil menghitung dengan benar!',
+        buttonText: _currentStep < widget.totalSteps ? 'Lanjut' : 'Selesai',
+        onNextPressed: _advanceToNext,
+      );
     } else {
       // Soft retry - anti frustration (V0.4)
       SoundPlayer.instance.playSoftRetry();
@@ -151,11 +161,7 @@ class _CountingScreenState extends State<CountingScreen> {
       header: ChunkyHeader(
         currentStep: _currentStep,
         totalSteps: widget.totalSteps,
-        isMuted: SoundPlayer.instance.isMuted,
         onBack: widget.onBack,
-        onAudioToggle: () {
-          setState(() => SoundPlayer.instance.toggleMute());
-        },
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -204,75 +210,103 @@ class _CountingScreenState extends State<CountingScreen> {
             char: '$target',
             strokeColor: AppColors.numberPrimary,
             size: 290.0,
+            onProgressChanged: (p) {
+              final hasStrokes = p > 0 || (_canvasKey.currentState?.hasUserStrokes ?? false);
+              if (_hasUserProgress != hasStrokes) {
+                setState(() => _hasUserProgress = hasStrokes);
+              }
+            },
             onCompleted: () {
-              setState(() => _isTracingCompleted = true);
+              setState(() {
+                _isTracingCompleted = true;
+                _hasUserProgress = true;
+              });
+              SoundPlayer.instance.playSuccess();
+              CelebrationPopup.show(
+                context: context,
+                title: 'Luar Biasa!',
+                subtitle: 'Angka $target berhasil ditebalkan!',
+                buttonText: 'Lanjut Berhitung',
+                onNextPressed: _advanceToNext,
+              );
             },
           ),
         ),
         const SizedBox(height: AppSpacing.space16),
 
-        // Tracing Action Controls: [ ▶ Contoh ] [ 🧽 Hapus ]
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ChunkyButton(
-              text: '▶ Contoh',
-              primaryColor: AppColors.cardSurface,
-              bevelColor: AppColors.cardBevel,
-              textColor: AppColors.textPrimary,
-              fontSize: 14.0,
-              height: 44.0,
-              onPressed: () {
-                _canvasKey.currentState?.playDemo();
-              },
-            ),
-            const SizedBox(width: AppSpacing.space12),
-            ChunkyButton(
-              text: '🧽 Hapus',
-              primaryColor: AppColors.cardSurface,
-              bevelColor: AppColors.cardBevel,
-              textColor: AppColors.textPrimary,
-              fontSize: 14.0,
-              height: 44.0,
-              onPressed: () {
-                _canvasKey.currentState?.clear();
-                setState(() => _isTracingCompleted = false);
-              },
-            ),
-          ],
+        // Tracing Action Controls: [ ▶ Contoh ] (Gabungan Contoh & Hapus)
+        ChunkyButton(
+          icon: const Icon(Icons.play_arrow_rounded, size: 20.0, color: AppColors.textSecondary),
+          text: 'Contoh',
+          primaryColor: AppColors.cardSurface,
+          bevelColor: AppColors.cardBevel,
+          textColor: AppColors.textSecondary,
+          fontSize: 14.0,
+          height: 44.0,
+          onPressed: () {
+            _canvasKey.currentState?.clear();
+            _canvasKey.currentState?.playDemo();
+            setState(() {
+              _isTracingCompleted = false;
+              _hasUserProgress = false;
+            });
+          },
         ),
         const SizedBox(height: AppSpacing.space24),
 
-        // Primary CTA: Lanjut ke Berhitung ➜ (Adaptif & Anti-Frustrasi)
-        SizedBox(
-          width: 260.0,
-          child: ChunkyButton(
-            text: _isTracingCompleted
-                ? 'Lanjut Berhitung ➜'
-                : 'Tebalkan Dulu Ya ✏️',
-            primaryColor: _isTracingCompleted
-                ? AppColors.brandMintDark
-                : AppColors.cardSurface,
-            bevelColor: _isTracingCompleted
-                ? const Color(0xFF1E8C82)
-                : AppColors.cardBevel,
-            textColor: _isTracingCompleted
-                ? Colors.white
-                : AppColors.textSecondary,
-            fontSize: 16.0,
-            height: 52.0,
-            onPressed: () {
-              if (_isTracingCompleted) {
+        // Tombol CTA Adaptif: [ Tebalkan Dulu Ya ✏️ ] / [ Coba Lagi 🧽 ] / [ Lanjut Berhitung ➜ ]
+        if (_isTracingCompleted)
+          SizedBox(
+            width: 260.0,
+            child: ChunkyButton(
+              text: 'Lanjut Berhitung ➜',
+              primaryColor: AppColors.brandMint,
+              bevelColor: AppColors.brandMintDark,
+              textColor: AppColors.textWhite,
+              fontSize: 16.0,
+              height: 52.0,
+              onPressed: () {
                 SoundPlayer.instance.playSuccess();
                 _advanceToNext();
-              } else {
-                // Dorongan ramah anti-frustrasi: bimbing anak dengan demo
+              },
+            ),
+          )
+        else if (_hasUserProgress)
+          SizedBox(
+            width: 260.0,
+            child: ChunkyButton(
+              text: 'Coba Lagi 🧽',
+              primaryColor: AppColors.retryBackground,
+              bevelColor: AppColors.retryBevel,
+              textColor: const Color(0xFFC05621),
+              fontSize: 16.0,
+              height: 52.0,
+              onPressed: () {
                 SoundPlayer.instance.playEncouragement();
+                _canvasKey.currentState?.clear();
+                setState(() {
+                  _hasUserProgress = false;
+                  _isTracingCompleted = false;
+                });
+              },
+            ),
+          )
+        else
+          SizedBox(
+            width: 260.0,
+            child: ChunkyButton(
+              text: 'Tebalkan Dulu Ya ✏️',
+              primaryColor: AppColors.cardSurface,
+              bevelColor: AppColors.cardBevel,
+              textColor: AppColors.textSecondary,
+              fontSize: 16.0,
+              height: 52.0,
+              onPressed: () {
+                SoundPlayer.instance.playPromptTebalkan();
                 _canvasKey.currentState?.playDemo();
-              }
-            },
+              },
+            ),
           ),
-        ),
         const SizedBox(height: AppSpacing.space16),
       ],
     );
@@ -286,7 +320,7 @@ class _CountingScreenState extends State<CountingScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Prompt Header & Audio Trigger
+        // Prompt Header & Audio Trigger (Minimalist / Pre-reader friendly)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -297,7 +331,7 @@ class _CountingScreenState extends State<CountingScreen> {
             ),
             const SizedBox(width: AppSpacing.space12),
             Text(
-              'Hitung ada berapa buah?',
+              'Hitung buahnya! 🍎',
               style: AppTypography.uiHeading(
                 fontSize: 22.0,
                 color: AppColors.textPrimary,
@@ -307,12 +341,11 @@ class _CountingScreenState extends State<CountingScreen> {
         ),
         const SizedBox(height: AppSpacing.space16),
 
-        // Main Diorama Card (Pure White Surface)
-        ChunkyCard(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.space20,
-            vertical: AppSpacing.space16,
-          ),
+        // Open Floating Diorama Stage (Bebas Kartu — Living Island)
+        DioramaStage(
+          stageColor: AppColors.numberPrimary,
+          floorShadowWidth: 240.0,
+          floorShadowHeight: 16.0,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -332,7 +365,7 @@ class _CountingScreenState extends State<CountingScreen> {
 
               const SizedBox(height: AppSpacing.space8),
 
-              // Optional counting helper (Single-Task Principle: hidden by default)
+              // Optional counting helper (Icon-only: Shopping Basket 🧺)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -341,15 +374,13 @@ class _CountingScreenState extends State<CountingScreen> {
                       _showBasket
                           ? Icons.visibility_off_rounded
                           : Icons.shopping_basket_rounded,
-                      size: 20.0,
+                      size: 22.0,
                       color: AppColors.numberBevel,
                     ),
-                    text: _showBasket ? 'Sembunyi' : 'Bantu',
                     primaryColor: AppColors.numberTint,
                     bevelColor: AppColors.numberBevel,
-                    textColor: AppColors.textPrimary,
-                    fontSize: 14.0,
                     height: 44.0,
+                    width: 52.0,
                     onPressed: () {
                       SoundPlayer.instance.playPop();
                       setState(() => _showBasket = !_showBasket);
@@ -428,12 +459,7 @@ class _CountingScreenState extends State<CountingScreen> {
             );
           },
           child: _isAnswerCorrect
-              ? CelebrationBanner(
-                  key: const ValueKey('celebration'),
-                  title: 'Luar Biasa!',
-                  subtitle: 'Kamu berhasil menghitung dengan benar!',
-                  onNextPressed: _advanceToNext,
-                )
+              ? const SizedBox(key: ValueKey('celebration'), height: 52.0)
               : Row(
                   key: const ValueKey('navigation'),
                   mainAxisAlignment: MainAxisAlignment.center,
