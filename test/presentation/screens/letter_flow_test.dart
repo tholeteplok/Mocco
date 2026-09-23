@@ -105,9 +105,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Step 3: Verify audio-visual letter recognition quiz
-      expect(find.text('Mana huruf Aa?'), findsOneWidget);
-      expect(find.text('A untuk Apel'), findsOneWidget);
+      // Step 3: Verify audio-visual letter recognition quiz (Zero-cheat, initial phoneme prompt)
+      expect(find.text('Mana huruf awal Apel?'), findsOneWidget);
+      expect(find.text('A untuk Apel'), findsNothing);
       expect(find.byType(FlashcardAnswer), findsNWidgets(4));
 
       // Tap correct option ('A' or 'a' depending on balanced mixedCase)

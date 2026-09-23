@@ -131,7 +131,12 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        SoundPlayer.instance.playLetterName(_currentLetter.char);
+        SoundPlayer.instance.playWord(_currentLetter.exampleWord);
+        _activeTimers.add(Timer(const Duration(milliseconds: 700), () {
+          if (mounted) {
+            SoundPlayer.instance.playLetterPhonic(_currentLetter.char);
+          }
+        }));
       }
     });
   }
@@ -187,12 +192,21 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
   }
 
   void _playLetterAudio() {
-    SoundPlayer.instance.playLetterName(_currentLetter.char);
-    _activeTimers.add(Timer(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        SoundPlayer.instance.playLetterPhonic(_currentLetter.char);
-      }
-    }));
+    if (_isMatchingStep) {
+      SoundPlayer.instance.playLetterName(_currentLetter.char);
+      _activeTimers.add(Timer(const Duration(milliseconds: 600), () {
+        if (mounted) {
+          SoundPlayer.instance.playLetterPhonic(_currentLetter.char);
+        }
+      }));
+    } else {
+      SoundPlayer.instance.playWord(_currentLetter.exampleWord);
+      _activeTimers.add(Timer(const Duration(milliseconds: 700), () {
+        if (mounted) {
+          SoundPlayer.instance.playLetterPhonic(_currentLetter.char);
+        }
+      }));
+    }
   }
 
   @override
@@ -395,19 +409,19 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
         // Panggung Huruf Besar (Hero Diorama Stage — Bebas Kartu)
         DioramaStage(
           stageColor: AppColors.letterPrimary,
-          floorShadowWidth: 120.0,
-          floorShadowHeight: 12.0,
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.space12),
+          floorShadowWidth: 150.0,
+          floorShadowHeight: 14.0,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.space8),
           child: Text(
             letter.char,
             style: AppTypography.learningDisplay(
-              fontSize: 84.0,
+              fontSize: 140.0,
               color: AppColors.letterPrimary,
             ).copyWith(
               shadows: [
                 Shadow(
                   color: AppColors.letterBevel.withValues(alpha: 0.35),
-                  offset: const Offset(0, 5.0),
+                  offset: const Offset(0, 6.0),
                   blurRadius: 0,
                 ),
               ],
@@ -488,7 +502,7 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
             ),
             const SizedBox(width: AppSpacing.space12),
             Text(
-              'Mana huruf ${letter.pairDisplay}?',
+              'Mana huruf awal ${letter.exampleWord}?',
               style: AppTypography.uiHeading(
                 fontSize: 22.0,
                 color: AppColors.textPrimary,
@@ -498,93 +512,63 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
         ),
         const SizedBox(height: AppSpacing.space20),
 
-        // Objek Cues Interaktif di Panggung (Airy Stage dengan Suara Benda Saat Ditekan)
+        // Objek Cues Interaktif di Panggung (Pure Image Phonics Stage — Tanpa Teks Contekan)
         Container(
           width: 280,
           padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.space16,
+            vertical: AppSpacing.space24,
             horizontal: AppSpacing.space12,
           ),
           decoration: BoxDecoration(
             color: AppColors.letterPrimary.withValues(alpha: 0.08),
             borderRadius: const BorderRadius.all(Radius.elliptical(140, 105)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() => _isObjectTapped = true);
-                  SoundPlayer.instance.playSquish();
-                  SoundPlayer.instance.playWord(letter.exampleWord);
-                  _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
-                    if (mounted) setState(() => _isObjectTapped = false);
-                  }));
-                },
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedScale(
-                  scale: _isObjectTapped ? 1.20 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.elasticOut,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (letter.imageAsset != null)
-                        Image.asset(
-                          letter.imageAsset!,
-                          width: 140.0,
-                          height: 140.0,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => Text(
-                            letter.emoji.isNotEmpty ? letter.emoji : '🍎',
-                            style: const TextStyle(fontSize: 90),
-                          ),
-                        )
-                      else
-                        Text(
-                          letter.emoji.isNotEmpty ? letter.emoji : '🍎',
-                          style: const TextStyle(fontSize: 90),
-                        ),
-                      const SizedBox(height: 6),
-                      // Floor contact shadow
-                      Container(
-                        width: 90,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: AppColors.letterBevel.withValues(alpha: 0.20),
-                          borderRadius: const BorderRadius.all(Radius.elliptical(45, 6)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${letter.char} untuk ${letter.exampleWord}',
-                style: AppTypography.uiHeading(fontSize: 16.0).copyWith(
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
+          child: GestureDetector(
+            onTap: () {
+              setState(() => _isObjectTapped = true);
+              SoundPlayer.instance.playSquish();
+              SoundPlayer.instance.playWord(letter.exampleWord);
+              _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
+                if (mounted) setState(() => _isObjectTapped = false);
+              }));
+            },
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedScale(
+              scale: _isObjectTapped ? 1.20 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.elasticOut,
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.touch_app_rounded, size: 14, color: AppColors.letterPrimary),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      'Ketuk untuk mendengar',
-                      style: AppTypography.uiBody(
-                        fontSize: 12.0,
-                        color: AppColors.letterPrimary,
+                  if (letter.imageAsset != null)
+                    Image.asset(
+                      letter.imageAsset!,
+                      width: 140.0,
+                      height: 140.0,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Text(
+                        letter.emoji.isNotEmpty ? letter.emoji : '🍎',
+                        style: const TextStyle(fontSize: 90),
                       ),
-                      overflow: TextOverflow.ellipsis,
+                    )
+                  else
+                    Text(
+                      letter.emoji.isNotEmpty ? letter.emoji : '🍎',
+                      style: const TextStyle(fontSize: 90),
+                    ),
+                  const SizedBox(height: 6),
+                  // Floor contact shadow
+                  Container(
+                    width: 90,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: AppColors.letterBevel.withValues(alpha: 0.20),
+                      borderRadius: const BorderRadius.all(Radius.elliptical(45, 6)),
                     ),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
 
