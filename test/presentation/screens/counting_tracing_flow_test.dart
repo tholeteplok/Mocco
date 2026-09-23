@@ -232,5 +232,56 @@ void main() {
       expect(find.text('Tebalkan angka 10!'), findsOneWidget);
       expect(find.byType(GuidedTracingCanvas), findsOneWidget);
     });
+
+    testWidgets('GuidedTracingCanvas rejects off-path touches and enforces sequential stroke guard', (tester) async {
+      final key = GlobalKey<GuidedTracingCanvasState>();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GuidedTracingCanvas(
+                key: key,
+                char: '10',
+                size: 290.0,
+                autoPlayDemo: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final state = key.currentState!;
+      final gestureFinder = find.descendant(
+        of: find.byType(GuidedTracingCanvas),
+        matching: find.byType(GestureDetector),
+      );
+      final canvasOrigin = tester.getTopLeft(gestureFinder.first);
+      final scale = 290.0 / 100.0;
+
+      // 1. Sentuhan yang melenceng jauh di luar garis panduan (deviasi > 15dp)
+      // Koordinat (5, 5) berada di sudut kanvas yang jauh dari angka 10
+      final farPoint = canvasOrigin + Offset(5 * scale, 5 * scale);
+      final farGesture = await tester.startGesture(farPoint);
+      await tester.pump();
+      await farGesture.up();
+      await tester.pump();
+
+      // Progres harus tetap 0.0 (sentuhan asal-asalan ditolak)
+      expect(state.progress, equals(0.0), reason: 'Off-path touch must be rejected');
+
+      // 2. Sentuhan langsung ke Stroke 1 (digit 0) sebelum Stroke 0 (digit 1) dikerjakan
+      // Titik awal digit 0: (68, 14)
+      final pStartDigit0 = canvasOrigin + Offset(68 * scale, 14 * scale);
+      final prematureGesture = await tester.startGesture(pStartDigit0);
+      await tester.pump();
+      await prematureGesture.up();
+      await tester.pump();
+
+      // Stroke 1 harus tetap 0 karena Stroke 0 belum mencapai 60%
+      expect(state.isStrokeCompleted(1), isFalse);
+      expect(state.progress, equals(0.0), reason: 'Premature stroke 1 touch must be blocked by sequential guard');
+    });
   });
 }

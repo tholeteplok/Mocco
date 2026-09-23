@@ -5,14 +5,15 @@ import '../../../core/tokens/app_colors.dart';
 import '../../../core/utils/sound_player.dart';
 import '../../../domain/services/number_strokes.dart';
 
-/// Interactive Guided Tracing Canvas (V2.1 - Gentle Proximity Path Coverage)
+/// Interactive Guided Tracing Canvas (V2.2 - Firm Motoric Proximity Calibration)
 ///
 /// Features:
 /// - Flowing marching dashes showing writing direction
 /// - Pulsing green start point with stroke order numbers (1, 2, ...)
 /// - Animated demo pencil tracing the path
 /// - Real-time cute pencil cursor tracking the child's touch
-/// - Proximity Path Coverage (Tolerance 24dp, Threshold 70%)
+/// - Proximity Path Coverage (Tolerance 15dp, Per-Stroke 78%, Total 80%)
+/// - Sequential Stroke Guard (Stroke s activates when stroke s-1 reaches 60%)
 /// - Gamified visual progress bar and completion badge
 /// - Audio squish on touch & success chime on threshold
 class GuidedTracingCanvas extends StatefulWidget {
@@ -35,6 +36,30 @@ class GuidedTracingCanvas extends StatefulWidget {
 
   @override
   State<GuidedTracingCanvas> createState() => GuidedTracingCanvasState();
+}
+
+/// Centralized calibration parameters for guided tracing motoric tolerance
+abstract final class TracingCalibration {
+  /// Maximum deviation radius (in dp) from the guide path.
+  /// Tightened from 24.0dp to 15.0dp (corridor width 30dp) to snugly match
+  /// the visible ink brush (16.0dp), eliminating sloppy out-of-line scribbles.
+  static const double toleranceRadius = 15.0;
+
+  /// Distance (in dp) between discrete checkpoint dots along guide strokes.
+  /// Tightened from 8.0dp to 6.0dp for smoother, more precise continuity tracking.
+  static const double stepSize = 6.0;
+
+  /// Minimum coverage ratio required for an individual stroke to count as complete.
+  /// Raised from 58% to 78% so the child must trace nearly the entire path.
+  static const double perStrokeThreshold = 0.78;
+
+  /// Minimum total coverage ratio required across all strokes for victory.
+  /// Raised from 65% to 80%.
+  static const double totalProgressThreshold = 0.80;
+
+  /// Minimum progress required on preceding stroke(s) before a subsequent stroke
+  /// can accept touch points (anti-scribble guard).
+  static const double strokeActivationThreshold = 0.60;
 }
 
 class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
@@ -70,7 +95,7 @@ class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
     final covered = strokeIndex < _coveredPerStroke.length
         ? _coveredPerStroke[strokeIndex].length
         : 0;
-    return (covered / _strokeCheckpoints[strokeIndex].length) >= 0.58;
+    return (covered / _strokeCheckpoints[strokeIndex].length) >= TracingCalibration.perStrokeThreshold;
   }
 
   bool get areAllStrokesCompleted {
@@ -78,7 +103,7 @@ class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
     for (int s = 0; s < _strokeCheckpoints.length; s++) {
       if (!isStrokeCompleted(s)) return false;
     }
-    return progress >= 0.65;
+    return progress >= TracingCalibration.totalProgressThreshold;
   }
 
   bool get isCompleted => _isCompleted;
@@ -133,7 +158,7 @@ class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
     _isCompleted = false;
   }
 
-  /// Menghasilkan titik-titik acuan diskrit per stroke setiap ~8 pixel
+  /// Menghasilkan titik-titik acuan diskrit per stroke setiap ~6 pixel
   static List<List<Offset>> _generateCheckpoints(
     List<List<List<double>>>? guidePaths,
     double size,
@@ -142,7 +167,7 @@ class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
     final scaleX = size / 100.0;
     final scaleY = size / 100.0;
     final result = <List<Offset>>[];
-    const stepSize = 8.0;
+    const stepSize = TracingCalibration.stepSize;
 
     for (final stroke in guidePaths) {
       if (stroke.isEmpty) continue;
@@ -171,15 +196,33 @@ class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
     return result;
   }
 
-  /// Cek kedekatan sentuhan jari anak ke titik-titik panduan per stroke (radius 24dp)
+  /// Memeriksa apakah stroke [strokeIndex] diizinkan menerima sentuhan.
+  /// Stroke berikutnya hanya aktif setelah stroke sebelumnya mencapai progres minimal (Sequential Guard).
+  bool _canStrokeAcceptTouch(int strokeIndex) {
+    if (strokeIndex == 0) return true;
+    for (int prev = 0; prev < strokeIndex; prev++) {
+      final prevTotal = _strokeCheckpoints[prev].length;
+      if (prevTotal == 0) continue;
+      final prevCovered = prev < _coveredPerStroke.length ? _coveredPerStroke[prev].length : 0;
+      if ((prevCovered / prevTotal) < TracingCalibration.strokeActivationThreshold) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// Cek kedekatan sentuhan jari anak ke titik-titik panduan per stroke (radius 15dp)
   void _checkProximity(Offset touchPos) {
     if (_strokeCheckpoints.isEmpty) return;
 
-    const toleranceRadius = 24.0;
+    const toleranceRadius = TracingCalibration.toleranceRadius;
     const toleranceRadiusSq = toleranceRadius * toleranceRadius;
     bool newlyAdded = false;
 
     for (int s = 0; s < _strokeCheckpoints.length; s++) {
+      // Sequential Stroke Guard: Stroke s baru aktif jika stroke sebelumnya >= 60%
+      if (!_canStrokeAcceptTouch(s)) continue;
+
       final pts = _strokeCheckpoints[s];
       final covered = _coveredPerStroke[s];
       for (int i = 0; i < pts.length; i++) {

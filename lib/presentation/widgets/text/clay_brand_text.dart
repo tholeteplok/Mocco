@@ -5,8 +5,7 @@ import '../../../core/tokens/app_typography.dart';
 
 /// Komponen teks merek "Mocco" dengan efek claymorphism 3D.
 ///
-/// Menggunakan font [Fredoka] yang selaras 100% dengan teks pada
-/// sampul buku di icon launcher aplikasi.
+/// Menggunakan font kustom [Momentz] yang montok dan berkarakter playful 2.5D.
 class ClayBrandText extends StatelessWidget {
   const ClayBrandText({
     super.key,

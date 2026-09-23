@@ -72,7 +72,7 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
       } while (candidate.char == _lastTargetChar && letterCatalog.length > 1);
       _targetLetter = candidate;
       _lastTargetChar = candidate.char;
-      _options = widget.generator.generateOptions(_targetLetter.char, isUppercase: true);
+      _options = widget.generator.generateOptions(_targetLetter.char, mixedCase: true);
       _selectedLetter = null;
       _isAnswerCorrect = false;
     });
@@ -102,7 +102,7 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
 
     setState(() => _selectedLetter = option);
 
-    if (option == _targetLetter.char) {
+    if (option.toLowerCase() == _targetLetter.char.toLowerCase()) {
       // Correct answer! Child keeps full control — no auto-advance.
       setState(() => _isAnswerCorrect = true);
       SoundPlayer.instance.playSuccess();

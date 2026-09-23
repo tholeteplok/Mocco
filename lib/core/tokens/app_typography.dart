@@ -67,16 +67,17 @@ abstract final class AppTypography {
     );
   }
 
-  /// Brand display text (Fredoka font matching icon launcher)
+  /// Brand display text (Momentz playful claymorphic font for Mocco brand)
   static TextStyle brandTitle({
     double fontSize = 48.0,
     Color color = AppColors.brandOrange,
   }) {
-    return GoogleFonts.fredoka(
+    return TextStyle(
+      fontFamily: 'Momentz',
       fontSize: fontSize,
-      fontWeight: FontWeight.w800,
+      fontWeight: FontWeight.bold,
       color: color,
-      letterSpacing: 1.2,
+      letterSpacing: 1.0,
     );
   }
 }

@@ -6,7 +6,7 @@ import 'package:mocco/presentation/widgets/text/clay_brand_text.dart';
 
 void main() {
   group('SplashScreen Widget Tests', () {
-    testWidgets('renders reading mascot, Fredoka clay brand text, and tagline', (tester) async {
+    testWidgets('renders reading mascot, Momentz clay brand text, and tagline', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: SplashScreen(

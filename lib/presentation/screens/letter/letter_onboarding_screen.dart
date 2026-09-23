@@ -69,9 +69,6 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
   bool get _isTracingStep => _currentStep == 1;
   bool get _isMatchingStep => _currentStep == 2;
 
-  String get _targetAnswer =>
-      _isMatchingStep ? _currentLetter.lowercaseChar : _currentLetter.char;
-
   @override
   void initState() {
     super.initState();
@@ -125,7 +122,7 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
     setState(() {
       _quizOptions = widget.generator.generateOptions(
         _currentLetter.char,
-        isUppercase: true,
+        mixedCase: true,
       );
       _selectedOption = null;
       _isAnswerCorrect = false;
@@ -160,7 +157,11 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
 
     setState(() => _selectedOption = option);
 
-    if (option == _targetAnswer) {
+    final bool matches = _isMatchingStep
+        ? option == _currentLetter.lowercaseChar
+        : option.toLowerCase() == _currentLetter.char.toLowerCase();
+
+    if (matches) {
       // Jawaban Benar
       setState(() => _isAnswerCorrect = true);
       SoundPlayer.instance.playSuccess();
@@ -593,7 +594,8 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
         Row(
           children: _quizOptions.map((option) {
             final isSelected = _selectedOption == option;
-            final isCorrect = isSelected && option == letter.char;
+            final isCorrect =
+                isSelected && option.toLowerCase() == letter.char.toLowerCase();
 
             return Expanded(
               child: Padding(

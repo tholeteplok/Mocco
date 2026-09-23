@@ -41,8 +41,14 @@ class LetterDistractorGenerator {
     'y': ['j', 'i'],
   };
 
-  /// Generates 4 unique letter options including the target letter
-  List<String> generateOptions(String targetLetter, {Random? random, bool isUppercase = false}) {
+  /// Generates 4 unique letter options including the target letter.
+  /// When [mixedCase] is true, exactly 2 options are uppercase and 2 are lowercase.
+  List<String> generateOptions(
+    String targetLetter, {
+    Random? random,
+    bool isUppercase = false,
+    bool mixedCase = false,
+  }) {
     final rng = random ?? Random();
     final lowerTarget = targetLetter.toLowerCase();
     final optionsSet = <String>{lowerTarget};
@@ -69,6 +75,18 @@ class LetterDistractorGenerator {
     }
 
     // 3. Match desired case and shuffle final order
+    if (mixedCase) {
+      // Balanced 2:2 distribution (2 uppercase, 2 lowercase)
+      final list = optionsSet.toList()..shuffle(rng);
+      final result = <String>[
+        list[0].toUpperCase(),
+        list[1].toUpperCase(),
+        list[2].toLowerCase(),
+        list[3].toLowerCase(),
+      ]..shuffle(rng);
+      return result;
+    }
+
     final result = optionsSet
         .map((l) => isUppercase ? l.toUpperCase() : l)
         .toList()

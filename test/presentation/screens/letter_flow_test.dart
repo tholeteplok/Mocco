@@ -110,8 +110,11 @@ void main() {
       expect(find.text('A untuk Apel'), findsOneWidget);
       expect(find.byType(FlashcardAnswer), findsNWidgets(4));
 
-      // Tap correct option ('A')
-      final optionFinder = find.widgetWithText(FlashcardAnswer, 'A');
+      // Tap correct option ('A' or 'a' depending on balanced mixedCase)
+      final upperFinder = find.widgetWithText(FlashcardAnswer, 'A');
+      final optionFinder = upperFinder.evaluate().isNotEmpty
+          ? upperFinder
+          : find.widgetWithText(FlashcardAnswer, 'a');
       await tester.tap(optionFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
