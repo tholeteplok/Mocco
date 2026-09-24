@@ -55,14 +55,40 @@ abstract final class AppAssets {
   static const String mascotJump = mascotCelebrate;
 
   // --- UI Assets ---
-  static const String mapCanvasBg = '$_ui/map_canvas_loop.png';
+  static const String worldMapSingle = '$_ui/world_map_single.webp';
   static const String badgeStamp = '$_ui/badge_stamp.png';
+
+  // --- 3D Clay Button Assets (Border-free Diorama Toys) ---
+  static const String _buttons = '$_ui/buttons';
+  static const String btnBack = '$_buttons/ic_button_back.png';
+  static const String btnBackPressed = '$_buttons/ic_button_back_pressed.png';
+  static const String btnNext = '$_buttons/ic_button_next.png';
+  static const String btnNextPressed = '$_buttons/ic_button_next_pressed.png';
+  static const String btnParents = '$_buttons/ic_button_parents.png';
+  static const String btnParentsPressed = '$_buttons/ic_button_parents_pressed.png';
+  static const String btnPlay = '$_buttons/ic_button_play.png';
+  static const String btnPlayPressed = '$_buttons/ic_button_play_pressed.png';
+  static const String btnSoundOn = '$_buttons/ic_button_soundON.png';
+  static const String btnSoundOff = '$_buttons/ic_button_soundOFF.png';
+  static const String btnVoice = '$_buttons/ic_button_voice.png';
+  static const String btnVoicePressed = '$_buttons/ic_button_voice_pressed.png';
+  static const String btnReplay = '$_buttons/ic_replay.png';
+  static const String btnReplayPressed = '$_buttons/ic_replay_pressed.png';
+  static const String icStar = '$_buttons/ic_star.png';
 
   // --- SFX (Tactile Sound Effects) ---
   static const String sfxPopWood = '$_sfx/pop_wood.mp3';
   static const String sfxSquish = '$_sfx/squish.mp3';
   static const String sfxChimeSuccess = '$_sfx/chime_success.mp3';
   static const String sfxSoftRetry = '$_sfx/soft_retry.mp3';
+  static const String sfxStarUnlock = '$_sfx/star_unlock.mp3';
+  static const String sfxCardFlip = '$_sfx/card_flip.mp3';
+  static const String sfxPopupWhoosh = '$_sfx/popup_whoosh.mp3';
+  static const String sfxMuteClick = '$_sfx/mute_click.mp3';
+
+  // --- BGM (Background Music — Map/Home Loop Only) ---
+  static const String _bgm = '$_audio/bgm';
+  static const String bgmMapHome = '$_bgm/map_home_loop.mp3';
 
   // --- Voice Over Helpers ---
   static String numberVoice(int number) => '$_voice/num_$number.mp3';
@@ -70,12 +96,18 @@ abstract final class AppAssets {
   static String letterPhonicVoice(String letter) => '$_voice/letter_phonic_${letter.toLowerCase()}.mp3';
   static String wordVoice(String word) => '$_voice/${word.toLowerCase()}.mp3';
   static String syllableVoice(String syllable) => '$_voice/syl_${syllable.toLowerCase()}.mp3';
+  static String zoneVoice(String zone) => '$_voice/zone_${zone.toLowerCase()}.mp3';
 
   // --- Praise & Prompt Voices ---
   static const String voiceHebat = '$_voice/hebat.mp3';
   static const String voicePintar = '$_voice/pintar.mp3';
   static const String voiceBagus = '$_voice/bagus.mp3';
+  static const String voicePraiseKeren = '$_voice/praise_keren.mp3';
+  static const String voicePraiseLuarBiasa = '$_voice/praise_luar_biasa.mp3';
+  static const String voicePraiseKamuBisa = '$_voice/praise_kamu_bisa.mp3';
   static const String voiceCobaLagi = '$_voice/coba_lagi.mp3';
+  static const String voiceTidakApaApa = '$_voice/tidak_apa_apa.mp3';
   static const String voiceHitung = '$_voice/hitung.mp3';
   static const String voiceTebalkanDuluYa = '$_voice/tebalkan_dulu_ya.mp3';
+  static const String voicePilihPulau = '$_voice/pilih_pulau.mp3';
 }

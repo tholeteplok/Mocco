@@ -41,9 +41,9 @@ class GuidedTracingCanvas extends StatefulWidget {
 /// Centralized calibration parameters for guided tracing motoric tolerance
 abstract final class TracingCalibration {
   /// Maximum deviation radius (in dp) from the guide path.
-  /// Tightened from 24.0dp to 15.0dp (corridor width 30dp) to snugly match
-  /// the visible ink brush (16.0dp), eliminating sloppy out-of-line scribbles.
-  static const double toleranceRadius = 15.0;
+  /// Calibrated to 20.0dp to comfortably accommodate preschool toddlers' micro-jitters
+  /// while still enforcing stroke discipline along the target character.
+  static const double toleranceRadius = 20.0;
 
   /// Distance (in dp) between discrete checkpoint dots along guide strokes.
   /// Tightened from 8.0dp to 6.0dp for smoother, more precise continuity tracking.
@@ -427,7 +427,7 @@ class GuidedTracingCanvasState extends State<GuidedTracingCanvas>
           width: widget.size * 0.75,
           height: 8,
           decoration: BoxDecoration(
-            color: const Color(0xFFEDE4D8),
+            color: AppColors.disabledMuted,
             borderRadius: BorderRadius.circular(4),
           ),
           child: FractionallySizedBox(
@@ -563,7 +563,7 @@ class _TracingCanvasPainter extends CustomPainter {
           canvas.drawCircle(
             startPt,
             10.0,
-            Paint()..color = const Color(0xFF3ECF6A),
+            Paint()..color = AppColors.tracingPathSuccess,
           );
           final checkPainter = TextPainter(
             text: const TextSpan(
@@ -586,12 +586,12 @@ class _TracingCanvasPainter extends CustomPainter {
           canvas.drawCircle(
             startPt,
             pulseR + 4,
-            Paint()..color = const Color(0xFF3ECF6A).withValues(alpha: 0.3),
+            Paint()..color = AppColors.tracingPathSuccess.withValues(alpha: 0.3),
           );
           canvas.drawCircle(
             startPt,
             9.5,
-            Paint()..color = const Color(0xFF3ECF6A),
+            Paint()..color = AppColors.tracingPathSuccess,
           );
           final numPainter = TextPainter(
             text: TextSpan(
@@ -613,7 +613,7 @@ class _TracingCanvasPainter extends CustomPainter {
           canvas.drawCircle(
             startPt,
             8.5,
-            Paint()..color = const Color(0xFF538BBC),
+            Paint()..color = AppColors.tracingPath,
           );
           final numPainter = TextPainter(
             text: TextSpan(
@@ -638,7 +638,7 @@ class _TracingCanvasPainter extends CustomPainter {
         final activeDist = demoProgress * grandTotal;
 
         final demoInkPaint = Paint()
-          ..color = const Color(0xFF538BBC)
+          ..color = AppColors.tracingPath
           ..strokeWidth = 12.0
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round

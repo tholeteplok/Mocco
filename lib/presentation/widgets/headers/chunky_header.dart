@@ -45,11 +45,8 @@ class ChunkyHeader extends StatelessWidget implements PreferredSizeWidget {
           children: [
             // Back Button
             if (onBack != null)
-              BubbleIconButton(
-                icon: Icons.arrow_back_rounded,
+              BubbleIconButton.back(
                 onPressed: onBack,
-                borderColor: primaryColor,
-                bevelColor: bevelColor,
               )
             else
               const SizedBox(width: AppSpacing.bubbleButtonSize),
@@ -71,11 +68,9 @@ class ChunkyHeader extends StatelessWidget implements PreferredSizeWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (onAudioToggle != null) ...[
-                    BubbleIconButton(
-                      icon: isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                    BubbleIconButton.sound(
+                      isMuted: isMuted,
                       onPressed: onAudioToggle,
-                      borderColor: primaryColor,
-                      bevelColor: bevelColor,
                     ),
                     if (onSettings != null) const SizedBox(width: AppSpacing.space8),
                   ],

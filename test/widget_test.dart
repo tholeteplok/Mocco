@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocco/core/constants/app_assets.dart';
 import 'package:mocco/domain/entities/counting_question.dart';
 import 'package:mocco/domain/services/counting_question_generator.dart';
 import 'package:mocco/presentation/screens/counting/counting_screen.dart';
@@ -9,7 +10,6 @@ import 'package:mocco/presentation/screens/letter/letter_quiz_screen.dart';
 import 'package:mocco/presentation/screens/map/adventure_map_screen.dart';
 import 'package:mocco/presentation/screens/shell/mocco_shell.dart';
 import 'package:mocco/presentation/widgets/buttons/audio_prompt_button.dart';
-import 'package:mocco/presentation/widgets/buttons/bubble_icon_button.dart';
 import 'package:mocco/presentation/widgets/cards/flashcard_answer.dart';
 import 'package:mocco/presentation/widgets/counting/counting_basket.dart';
 import 'package:mocco/presentation/widgets/counting/counting_object_item.dart';
@@ -33,26 +33,27 @@ class MockCountingGenerator extends CountingQuestionGenerator {
 }
 
 void main() {
-  testWidgets('AdventureMapScreen renders, toggles zones, and opens ParentGate', (WidgetTester tester) async {
+  testWidgets('AdventureMapScreen renders pure DS 2.0 map, nodes, and opens ParentGate', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: AdventureMapScreen(
           unlockedNumberIndex: 2,
-          unlockedLetterIndex: 2,
         ),
       ),
     );
     await tester.pump();
 
-    // Verify map node buttons for numbers are rendered
+    // Verify map node buttons are rendered
     expect(find.byType(MapNodeButton), findsWidgets);
     expect(find.text('1'), findsWidgets);
 
-    // Tap Parent Gate lock button to open ParentGateDialog
-    final parentGateFinder = find.descendant(
-      of: find.byType(BubbleIconButton),
-      matching: find.byIcon(Icons.lock_rounded),
-    );
+    // Verify 3D clay sound button and star chip
+    expect(find.image(const AssetImage(AppAssets.btnSoundOn)), findsOneWidget);
+    expect(find.image(const AssetImage(AppAssets.icStar)), findsOneWidget);
+
+    // Tap Parent Gate 3D button to open ParentGateDialog
+    final parentGateFinder = find.image(const AssetImage(AppAssets.btnParents));
+    expect(parentGateFinder, findsOneWidget);
     await tester.tap(parentGateFinder);
     await tester.pump();
 
@@ -62,21 +63,6 @@ void main() {
     // Close ParentGateDialog
     await tester.tap(find.byIcon(Icons.close_rounded));
     await tester.pump();
-
-    // Switch to Letters zone
-    await tester.tap(find.byIcon(Icons.sort_by_alpha_rounded));
-    await tester.pump();
-
-    // Verify letter nodes (e.g. 'Aa', 'Bb') are rendered
-    expect(find.text('Aa'), findsOneWidget);
-    expect(find.text('Bb'), findsOneWidget);
-
-    // Switch to Words zone
-    await tester.tap(find.byIcon(Icons.auto_stories_rounded));
-    await tester.pump();
-
-    // Verify word nodes (e.g. 'bu-ku') are rendered
-    expect(find.text('bu-ku'), findsOneWidget);
   });
 
   testWidgets('CountingScreen renders and supports basket drag/tap interaction', (WidgetTester tester) async {
@@ -158,10 +144,7 @@ void main() {
     await tester.pump();
     expect(find.byType(AdventureMapScreen), findsOneWidget);
     expect(
-      find.descendant(
-        of: find.byType(BubbleIconButton),
-        matching: find.byIcon(Icons.lock_rounded),
-      ),
+      find.image(const AssetImage(AppAssets.btnParents)),
       findsOneWidget,
     );
     expect(find.byType(MapNodeButton), findsWidgets);

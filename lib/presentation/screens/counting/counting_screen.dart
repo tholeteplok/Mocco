@@ -5,9 +5,12 @@ import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/sound_player.dart';
+import '../../../data/datasources/mastery_local_datasource.dart';
 import '../../../domain/entities/counting_question.dart';
 import '../../../domain/services/counting_question_generator.dart';
+import '../../widgets/buttons/adaptive_tracing_cta.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
+import '../../widgets/buttons/bubble_icon_button.dart';
 import '../../widgets/buttons/chunky_button.dart';
 import '../../widgets/cards/flashcard_answer.dart';
 import '../../widgets/counting/counting_basket.dart';
@@ -58,6 +61,8 @@ class _CountingScreenState extends State<CountingScreen> {
   final List<Timer> _activeTimers = [];
   bool _isTracingCompleted = false;
   bool _hasUserProgress = false;
+  int _sessionAttempts = 0;
+  int _sessionCorrect = 0;
 
   int? get _effectiveTargetNumber =>
       widget.targetNumber ?? widget.generator.fixedTargetCount;
@@ -108,6 +113,16 @@ class _CountingScreenState extends State<CountingScreen> {
       setState(() => _currentStep++);
       _loadNextQuestion();
     } else {
+      final targetNum = _effectiveTargetNumber;
+      if (targetNum != null && targetNum > 0) {
+        final attempts = _sessionAttempts > 0 ? _sessionAttempts : widget.totalSteps;
+        final correct = _sessionCorrect > 0 ? _sessionCorrect : widget.totalSteps;
+        HiveMasteryLocalDataSource().recordSessionResult(
+          id: 'number_$targetNum',
+          attempts: attempts,
+          correct: correct,
+        );
+      }
       widget.onCompleted?.call();
     }
   }
@@ -116,8 +131,10 @@ class _CountingScreenState extends State<CountingScreen> {
     if (_isAnswerCorrect) return; // already answered correctly
 
     setState(() => _selectedAnswer = answer);
+    _sessionAttempts++;
 
     if (answer == _currentQuestion.correctAnswer) {
+      _sessionCorrect++;
       // Correct! Child keeps full control — no auto-advance (v2.0 dopamine loop).
       setState(() => _isAnswerCorrect = true);
       SoundPlayer.instance.playSuccess();
@@ -165,7 +182,7 @@ class _CountingScreenState extends State<CountingScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.space8),
           child: _isTracingStep ? _buildTracingStage() : _buildCountingStage(),
         ),
       ),
@@ -192,11 +209,15 @@ class _CountingScreenState extends State<CountingScreen> {
               },
             ),
             const SizedBox(width: AppSpacing.space12),
-            Text(
-              'Tebalkan angka $target!',
-              style: AppTypography.uiHeading(
-                fontSize: 22.0,
-                color: AppColors.textPrimary,
+            Flexible(
+              child: Text(
+                'Tebalkan angka $target!',
+                style: AppTypography.uiHeading(
+                  fontSize: 22.0,
+                  color: AppColors.textPrimary,
+                ),
+                softWrap: true,
+                maxLines: 2,
               ),
             ),
           ],
@@ -221,7 +242,6 @@ class _CountingScreenState extends State<CountingScreen> {
                 _isTracingCompleted = true;
                 _hasUserProgress = true;
               });
-              SoundPlayer.instance.playSuccess();
               CelebrationPopup.show(
                 context: context,
                 title: 'Luar Biasa!',
@@ -254,59 +274,28 @@ class _CountingScreenState extends State<CountingScreen> {
         ),
         const SizedBox(height: AppSpacing.space24),
 
-        // Tombol CTA Adaptif: [ Tebalkan Dulu Ya ✏️ ] / [ Coba Lagi 🧽 ] / [ Lanjut Berhitung ➜ ]
-        if (_isTracingCompleted)
-          SizedBox(
-            width: 260.0,
-            child: ChunkyButton(
-              text: 'Lanjut Berhitung ➜',
-              primaryColor: AppColors.brandMint,
-              bevelColor: AppColors.brandMintDark,
-              textColor: AppColors.textWhite,
-              fontSize: 16.0,
-              height: 52.0,
-              onPressed: () {
-                SoundPlayer.instance.playSuccess();
-                _advanceToNext();
-              },
-            ),
-          )
-        else if (_hasUserProgress)
-          SizedBox(
-            width: 260.0,
-            child: ChunkyButton(
-              text: 'Coba Lagi 🧽',
-              primaryColor: AppColors.retryBackground,
-              bevelColor: AppColors.retryBevel,
-              textColor: const Color(0xFFC05621),
-              fontSize: 16.0,
-              height: 52.0,
-              onPressed: () {
-                SoundPlayer.instance.playEncouragement();
-                _canvasKey.currentState?.clear();
-                setState(() {
-                  _hasUserProgress = false;
-                  _isTracingCompleted = false;
-                });
-              },
-            ),
-          )
-        else
-          SizedBox(
-            width: 260.0,
-            child: ChunkyButton(
-              text: 'Tebalkan Dulu Ya ✏️',
-              primaryColor: AppColors.cardSurface,
-              bevelColor: AppColors.cardBevel,
-              textColor: AppColors.textSecondary,
-              fontSize: 16.0,
-              height: 52.0,
-              onPressed: () {
-                SoundPlayer.instance.playPromptTebalkan();
-                _canvasKey.currentState?.playDemo();
-              },
-            ),
-          ),
+        // Tombol CTA Adaptif Sentral: [ Tebalkan Dulu Ya ✏️ ] / [ Coba Lagi 🧽 ] / [ Lanjut Berhitung ➜ ]
+        AdaptiveTracingCta(
+          isCompleted: _isTracingCompleted,
+          hasUserProgress: _hasUserProgress,
+          advanceText: 'Lanjut Berhitung ➜',
+          onAdvance: () {
+            SoundPlayer.instance.playSuccess();
+            _advanceToNext();
+          },
+          onRetry: () {
+            SoundPlayer.instance.playEncouragement();
+            _canvasKey.currentState?.clear();
+            setState(() {
+              _hasUserProgress = false;
+              _isTracingCompleted = false;
+            });
+          },
+          onPrompt: () {
+            SoundPlayer.instance.playPromptTebalkan();
+            _canvasKey.currentState?.playDemo();
+          },
+        ),
         const SizedBox(height: AppSpacing.space16),
       ],
     );
@@ -330,11 +319,15 @@ class _CountingScreenState extends State<CountingScreen> {
               },
             ),
             const SizedBox(width: AppSpacing.space12),
-            Text(
-              'Hitung buahnya! 🍎',
-              style: AppTypography.uiHeading(
-                fontSize: 22.0,
-                color: AppColors.textPrimary,
+            Flexible(
+              child: Text(
+                'Hitung buahnya! 🍎',
+                style: AppTypography.uiHeading(
+                  fontSize: 22.0,
+                  color: AppColors.textPrimary,
+                ),
+                softWrap: true,
+                maxLines: 2,
               ),
             ),
           ],
@@ -464,17 +457,9 @@ class _CountingScreenState extends State<CountingScreen> {
                   key: const ValueKey('navigation'),
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Replay / Reset (only action before answering — no skip)
-                    ChunkyButton(
-                      icon: const Icon(
-                        Icons.replay_rounded,
-                        size: 28.0,
-                        color: AppColors.textPrimary,
-                      ),
-                      primaryColor: AppColors.cardSurface,
-                      bevelColor: AppColors.cardBevel,
+                    // Replay / Reset (3D Clay Replay Button)
+                    BubbleIconButton.replay(
                       onPressed: () {
-                        SoundPlayer.instance.playPop();
                         setState(() {
                           _countedItemIds.clear();
                           _selectedAnswer = -1;

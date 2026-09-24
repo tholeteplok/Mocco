@@ -8,7 +8,7 @@ import '../../../core/utils/sound_player.dart';
 import '../../../domain/entities/letter_entity.dart';
 import '../../../domain/services/letter_distractor_generator.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
-import '../../widgets/buttons/chunky_button.dart';
+import '../../widgets/buttons/bubble_icon_button.dart';
 import '../../widgets/cards/flashcard_answer.dart';
 import '../../widgets/stage/diorama_stage.dart';
 import '../../widgets/feedback/celebration_banner.dart';
@@ -139,7 +139,7 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.space8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -170,11 +170,15 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
                           color: AppColors.letterPrimary,
                         ),
                         const SizedBox(width: AppSpacing.space8),
-                        Text(
-                          'Dengarkan bunyinya 🎵',
-                          style: AppTypography.uiHeading(
-                            fontSize: 18.0,
-                            color: AppColors.textPrimary,
+                        Flexible(
+                          child: Text(
+                            'Dengarkan bunyinya 🎵',
+                            style: AppTypography.uiHeading(
+                              fontSize: 18.0,
+                              color: AppColors.textPrimary,
+                            ),
+                            softWrap: true,
+                            maxLines: 2,
                           ),
                         ),
                       ],
@@ -238,17 +242,9 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
                         key: const ValueKey('navigation'),
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Replay question (only action before answering — no skip)
-                          ChunkyButton(
-                            icon: const Icon(
-                              Icons.replay_rounded,
-                              size: 28.0,
-                              color: AppColors.textPrimary,
-                            ),
-                            primaryColor: AppColors.cardSurface,
-                            bevelColor: AppColors.cardBevel,
+                          // Replay question (3D Clay Replay Button)
+                          BubbleIconButton.replay(
                             onPressed: () {
-                              SoundPlayer.instance.playPop();
                               setState(() => _selectedLetter = null);
                             },
                           ),

@@ -19,7 +19,7 @@ class CelebrationPopup extends StatelessWidget {
     required this.onNextPressed,
     this.title = 'Hebat Sekali!',
     this.subtitle = 'Jawabanmu benar!',
-    this.buttonText = 'Lanjut',
+    this.buttonText = 'Lanjut Latihan',
     this.mascotMood = MascotMood.celebrate,
   });
 
@@ -35,7 +35,7 @@ class CelebrationPopup extends StatelessWidget {
     required VoidCallback onNextPressed,
     String title = 'Hebat Sekali!',
     String subtitle = 'Jawabanmu benar!',
-    String buttonText = 'Lanjut',
+    String buttonText = 'Lanjut Latihan',
     MascotMood mascotMood = MascotMood.celebrate,
   }) {
     return showModalBottomSheet<void>(
@@ -92,15 +92,15 @@ class CelebrationPopup extends StatelessWidget {
                     AppSpacing.space20,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.cardSurface,
                     borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
                     border: Border.all(
-                      color: const Color(0xFFB2EAE3),
+                      color: AppColors.celebrationBorder,
                       width: 3.0,
                     ),
                     boxShadow: const [
                       BoxShadow(
-                        color: Color(0xFFD0F0EB),
+                        color: AppColors.celebrationShadow,
                         offset: Offset(0, 6.0),
                         blurRadius: 0,
                       ),
@@ -115,7 +115,7 @@ class CelebrationPopup extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: AppTypography.uiHeading(
                           fontSize: 24.0,
-                          color: const Color(0xFF13695F),
+                          color: AppColors.celebrationTitle,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.space8),
@@ -126,7 +126,7 @@ class CelebrationPopup extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: AppTypography.uiBody(
                           fontSize: 16.0,
-                          color: const Color(0xFF267D73),
+                          color: AppColors.celebrationSubtitle,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.space20),

@@ -25,7 +25,7 @@ class DioramaStage extends StatelessWidget {
     this.showFloorShadow = true,
     this.floorShadowWidth = 120.0,
     this.floorShadowHeight = 14.0,
-    this.elevation = 0.08,
+    this.elevation = 0.40,
   });
 
   final Widget child;

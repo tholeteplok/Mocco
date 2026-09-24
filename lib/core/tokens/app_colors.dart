@@ -43,6 +43,19 @@ abstract final class AppColors {
   static const Color textSecondary = Color(0xFF495057); // Darkened for AAA on cream canvas
   static const Color textWhite = Color(0xFFFFFFFF);
 
+  // --- Celebration Popup Tokens ---
+  static const Color celebrationBorder = Color(0xFFB2EAE3); // Mint outline 3dp
+  static const Color celebrationShadow = Color(0xFFD0F0EB); // Soft bevel shadow 6dp
+  static const Color celebrationTitle = Color(0xFF13695F); // High-contrast mint dark title
+  static const Color celebrationSubtitle = Color(0xFF267D73); // Subtitle affirmation
+
+  // --- Tracing & Action Tokens ---
+  static const Color retryText = Color(0xFFC05621); // Warm ginger text for retry button
+  static const Color disabledMuted = Color(0xFFEDE4D8); // Muted neutral for disabled states
+  static const Color tracingCanvasBg = Color(0xFFFAF7F2); // Warm canvas background for tracing
+  static const Color tracingPath = Color(0xFF538BBC); // Tracing ink blue
+  static const Color tracingPathSuccess = Color(0xFF3ECF6A); // Tracing ink success green
+
   // --- Overlays ---
   static const Color modalOverlay = Color(0x66000000); // 40% black
 }

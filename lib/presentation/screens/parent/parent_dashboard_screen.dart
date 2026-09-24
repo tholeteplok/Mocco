@@ -1,254 +1,262 @@
 import 'package:flutter/material.dart';
+import 'package:hive_ce/hive.dart';
+
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
-import '../../widgets/buttons/chunky_button.dart';
+import '../../../core/utils/responsive_helper.dart';
+import '../../../core/utils/sound_player.dart';
+import '../../../data/datasources/mastery_local_datasource.dart';
+import '../../../domain/services/parent_stats.dart';
 import '../../widgets/cards/chunky_card.dart';
+import '../../widgets/dialogs/parent_gate_dialog.dart';
 import '../../widgets/dialogs/screen_time_dialog.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
-import '../../widgets/mascot/mascot_widget.dart';
 
-/// Parent Dashboard (reff: Total Time + Lessons + Stars + Subject + Weekly).
-class ParentDashboardScreen extends StatelessWidget {
+class _DashboardData {
+  const _DashboardData(this.stats, this.timeLimit, this.muted);
+  final ParentStats stats;
+  final int timeLimit;
+  final bool muted;
+}
+
+class ParentDashboardScreen extends StatefulWidget {
   const ParentDashboardScreen({
     super.key,
-    this.totalMinutes = 405,
-    this.lessonsCompleted = 32,
-    this.starsEarned = 128,
-    this.englishProgress = 0.78,
-    this.mathProgress = 0.62,
-    this.weeklyMinutes = const [45, 60, 75, 50, 80],
+    this.dataSource,
   });
 
-  final int totalMinutes;
-  final int lessonsCompleted;
-  final int starsEarned;
-  final double englishProgress;
-  final double mathProgress;
-  final List<int> weeklyMinutes;
+  final MasteryLocalDataSource? dataSource;
+
+  @override
+  State<ParentDashboardScreen> createState() => _ParentDashboardScreenState();
+}
+
+class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
+  static const String _timeLimitKey = '__system_time_limit';
+  static const String _muteKey = '__system_mute';
+  static const List<int> _timeOptions = [15, 30, 45, 60];
+  late Future<_DashboardData> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant ParentDashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _refresh();
+  }
+
+  Future<_DashboardData> _load() async {
+    final ds = widget.dataSource ?? HiveMasteryLocalDataSource();
+    try {
+      await ds.init();
+      final records = await ds.getAllRecords();
+      final globalIndex = await ds.getGlobalUnlockedIndex();
+      int limit = 30;
+      bool muted = false;
+      try {
+        if (Hive.isBoxOpen(HiveMasteryLocalDataSource.boxName)) {
+          final box = Hive.box(HiveMasteryLocalDataSource.boxName);
+          limit = (box.get(_timeLimitKey) as num?)?.toInt() ?? 30;
+          muted = (box.get(_muteKey) as bool?) ?? false;
+        }
+      } catch (_) {}
+      try {
+        SoundPlayer.instance.setMuted(muted);
+      } catch (_) {}
+      return _DashboardData(
+        ParentStatsService.compute(records, globalIndex),
+        limit,
+        muted,
+      );
+    } catch (_) {
+      return _DashboardData(
+        ParentStatsService.compute(const [], 1),
+        30,
+        false,
+      );
+    }
+  }
+
+  void _refresh() {
+    setState(() => _future = _load());
+  }
+
+  Future<void> _setTimeLimit(int v) async {
+    try {
+      await Hive.box(HiveMasteryLocalDataSource.boxName).put(_timeLimitKey, v);
+    } catch (_) {}
+    _refresh();
+  }
+
+  Future<void> _setMuted(bool v) async {
+    try {
+      await Hive.box(HiveMasteryLocalDataSource.boxName).put(_muteKey, v);
+    } catch (_) {}
+    SoundPlayer.instance.setMuted(v);
+    _refresh();
+  }
+
+  Future<void> _resetData() async {
+    final ok = await ParentGateDialog.show(context);
+    if (ok != true || !mounted) return;
+    try {
+      final box = Hive.box(HiveMasteryLocalDataSource.boxName);
+      final keys = box.keys
+          .whereType<String>()
+          .where((k) => !k.startsWith('__system_'))
+          .toList();
+      await box.deleteAll(keys);
+      await box.put('__system_global_node', 1);
+    } catch (_) {}
+    _refresh();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final hours = totalMinutes ~/ 60;
-    final minutes = totalMinutes % 60;
     return ResponsiveScaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: AppSpacing.space8),
-            Text('Parent Dashboard', style: AppTypography.uiHeading(fontSize: 22.0)),
-            Text(
-              'Perkembangan belajar anak minggu ini',
-              style: AppTypography.uiBody(
-                fontSize: 13.0,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.space12),
-            ChunkyCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total Learning Time',
-                    style: AppTypography.uiBody(
-                      fontSize: 12.0,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  Text(
-                    '${hours}h ${minutes}m',
-                    style: AppTypography.uiHeading(fontSize: 32.0),
-                  ),
-                  Text(
-                    '↑ 18% vs last week',
-                    style: AppTypography.uiBody(
-                      fontSize: 12.0,
-                      color: AppColors.brandMintDark,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.space12),
-
-            // Screen Time & Wellbeing Control (Rest Priming)
-            ChunkyCard(
-              backgroundColor: const Color(0xFFF0F4FC),
-              borderColor: const Color(0xFF90B4EE),
-              child: Row(
-                children: [
-                  const MascotWidget(
-                    mood: MascotMood.sleeping,
-                    size: 52.0,
-                    animate: true,
-                  ),
-                  const SizedBox(width: AppSpacing.space12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Batas Waktu Layar',
-                          style: AppTypography.uiHeading(fontSize: 16.0),
-                        ),
-                        Text(
-                          'Mencegah kecanduan layar secara halus',
-                          style: AppTypography.uiBody(
-                            fontSize: 12.0,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ChunkyButton(
-                    text: 'Istirahat',
-                    height: 38.0,
-                    fontSize: 13.0,
-                    primaryColor: const Color(0xFF4A7BD0),
-                    bevelColor: const Color(0xFF2E5499),
-                    textColor: AppColors.textWhite,
-                    onPressed: () => ScreenTimeDialog.show(context),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.space12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMiniStat(
-                    'Lessons Completed',
-                    '$lessonsCompleted',
-                    '↑ 6 vs last week',
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.space8),
-                Expanded(
-                  child: _buildMiniStat(
-                    'Stars Earned',
-                    '$starsEarned',
-                    '↑ 22 vs last week',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.space16),
-            Text('Subject Progress', style: AppTypography.uiHeading(fontSize: 18.0)),
-            const SizedBox(height: AppSpacing.space8),
-            _buildProgressRow('English', englishProgress, AppColors.letterPrimary),
-            const SizedBox(height: AppSpacing.space8),
-            _buildProgressRow('Pre-Math', mathProgress, AppColors.numberPrimary),
-            const SizedBox(height: AppSpacing.space16),
-            Text('Weekly Activity (Minutes)', style: AppTypography.uiHeading(fontSize: 18.0)),
-            const SizedBox(height: AppSpacing.space8),
-            ChunkyCard(
-              padding: const EdgeInsets.all(AppSpacing.space16),
-              child: SizedBox(
-                height: 120.0,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+      body: FutureBuilder<_DashboardData>(
+        future: _future,
+        builder: (context, snap) {
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final data = snap.data!;
+          final s = data.stats;
+          final maxWidth = ResponsiveHelper.value(
+            context,
+            mobile: double.infinity,
+            tablet: 720.0,
+          );
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (int i = 0; i < weeklyMinutes.length; i++)
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.bottomCenter,
-                                  child: Container(
-                                    height: (weeklyMinutes[i] / 90.0 * 80.0).clamp(8.0, 80.0),
-                                    decoration: BoxDecoration(
-                                      color: i == 2
-                                          ? AppColors.brandMint
-                                          : AppColors.letterPrimary.withValues(alpha: 0.55),
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4.0),
-                              Text(
-                                ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][i],
-                                style: AppTypography.uiBody(fontSize: 10.0),
-                              ),
-                            ],
-                          ),
-                        ),
+                    const SizedBox(height: AppSpacing.space8),
+                    Text('Dasbor Orang Tua',
+                        style: AppTypography.uiHeading(fontSize: 22.0)),
+                    Text(
+                      'Kemajuan belajar anak dari data perangkat ini',
+                      style: AppTypography.uiBody(
+                        fontSize: 13.0,
+                        color: AppColors.textSecondary,
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.space16),
+                    if (s.trainedCount == 0)
+                      _emptyCard()
+                    else ...[
+                      _summaryCard(s),
+                      const SizedBox(height: AppSpacing.space16),
+                      Text('Kemajuan per Zona',
+                          style: AppTypography.uiHeading(fontSize: 18.0)),
+                      const SizedBox(height: AppSpacing.space8),
+                      _zoneRow('Angka', s.numbers.trained, s.numbers.total,
+                          s.numbers.mastered, s.numbers.accuracy,
+                          AppColors.numberPrimary),
+                      const SizedBox(height: AppSpacing.space8),
+                      _zoneRow('Huruf', s.letters.trained, s.letters.total,
+                          s.letters.mastered, s.letters.accuracy,
+                          AppColors.letterPrimary),
+                      const SizedBox(height: AppSpacing.space8),
+                      _zoneRow('Kata', s.words.trained, s.words.total,
+                          s.words.mastered, s.words.accuracy,
+                          AppColors.blendingPrimary),
+                      const SizedBox(height: AppSpacing.space16),
+                      _recommendationCard(s),
+                    ],
+                    const SizedBox(height: AppSpacing.space16),
+                    _timeCard(data.timeLimit),
+                    const SizedBox(height: AppSpacing.space16),
+                    _audioCard(data.muted),
+                    const SizedBox(height: AppSpacing.space16),
+                    _resetCard(),
+                    const SizedBox(height: AppSpacing.space16),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.space12),
-            ChunkyCard(
-              backgroundColor: AppColors.successBannerBg,
-              borderColor: const Color(0xFFB2EAE3),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.psychology_rounded,
-                    size: 36.0,
-                    color: AppColors.brandMintDark,
-                  ),
-                  const SizedBox(width: AppSpacing.space12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Teacher Insight',
-                          style: AppTypography.uiHeading(fontSize: 16.0),
-                        ),
-                        Text(
-                          'Konsistensi bagus! Ajak anak menjelajah 1 zona baru setiap hari.',
-                          style: AppTypography.uiBody(fontSize: 13.0),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.space16),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildMiniStat(String label, String value, String delta) {
+  Widget _emptyCard() {
     return ChunkyCard(
-      padding: const EdgeInsets.all(AppSpacing.space12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text('Belum ada sesi latihan',
+              style: AppTypography.uiHeading(fontSize: 16.0)),
+          const SizedBox(height: AppSpacing.space8),
           Text(
-            label,
+            'Mainkan minimal 1 latihan bersama anak agar statistik muncul di sini.',
             style: AppTypography.uiBody(
-              fontSize: 11.0,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          Text(value, style: AppTypography.uiHeading(fontSize: 24.0)),
-          Text(
-            delta,
-            style: AppTypography.uiBody(
-              fontSize: 11.0,
-              color: AppColors.brandMintDark,
-            ),
+                fontSize: 13.0, color: AppColors.textSecondary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProgressRow(String label, double progress, Color color) {
+  Widget _summaryCard(ParentStats s) {
+    return ChunkyCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Ringkasan',
+              style: AppTypography.uiHeading(fontSize: 16.0)),
+          const SizedBox(height: AppSpacing.space12),
+          Row(
+            children: [
+              Expanded(child: _stat('Pelajaran terbuka', '${s.unlockedLessons}/44')),
+              const SizedBox(width: AppSpacing.space8),
+              Expanded(child: _stat('Item dilatih', '${s.trainedCount}')),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.space8),
+          Row(
+            children: [
+              Expanded(child: _stat('Dikuasai', '${s.masteredCount}')),
+              const SizedBox(width: AppSpacing.space8),
+              Expanded(child: _stat(
+                  'Akurasi', s.attemptsTotal == 0 ? '-' : '${(s.accuracy * 100).round()}%')),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.space8),
+          Text(
+            'Jawaban benar ${s.correctTotal} dari ${s.attemptsTotal} percobaan.',
+            style: AppTypography.uiBody(
+                fontSize: 12.0, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: AppTypography.uiBody(
+                fontSize: 11.0, color: AppColors.textSecondary)),
+        Text(value, style: AppTypography.uiHeading(fontSize: 24.0)),
+      ],
+    );
+  }
+
+  Widget _zoneRow(String label, int trained, int total, int mastered,
+      double accuracy, Color color) {
+    final pct = total == 0 ? 0.0 : trained / total;
     return ChunkyCard(
       padding: const EdgeInsets.all(AppSpacing.space12),
       child: Column(
@@ -258,21 +266,134 @@ class ParentDashboardScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(label, style: AppTypography.uiButton(fontSize: 15.0)),
-              Text(
-                '${(progress * 100).round()}%',
-                style: AppTypography.uiButton(fontSize: 15.0),
-              ),
+              Text('$trained/$total',
+                  style: AppTypography.uiButton(fontSize: 15.0)),
             ],
           ),
           const SizedBox(height: 8.0),
           ClipRRect(
             borderRadius: BorderRadius.circular(10.0),
             child: LinearProgressIndicator(
-              value: progress,
+              value: pct,
               minHeight: 10.0,
-              backgroundColor: color.withValues(alpha: 0.2),
+              backgroundColor: AppColors.cardBorder,
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
+          ),
+          const SizedBox(height: 4.0),
+          Text(
+            'Dikuasai $mastered · Akurasi ${trained == 0 ? '-' : '${(accuracy * 100).round()}%'}',
+            style: AppTypography.uiBody(
+                fontSize: 11.0, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _recommendationCard(ParentStats s) {
+    final text = s.weakestZone == null
+        ? 'Belum cukup data untuk rekomendasi. Lanjutkan 1 zona setiap hari.'
+        : 'Zona ${s.weakestZone} memiliki akurasi terendah. Ajak anak mengulang 1 sesi pendek di zona tersebut.';
+    return ChunkyCard(
+      backgroundColor: AppColors.successBannerBg,
+      child: Row(
+        children: [
+          const Icon(Icons.psychology_rounded,
+              size: 36.0, color: AppColors.brandMintDark),
+          const SizedBox(width: AppSpacing.space12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Rekomendasi',
+                    style: AppTypography.uiHeading(fontSize: 16.0)),
+                Text(text,
+                    style: AppTypography.uiBody(fontSize: 13.0)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _timeCard(int limit) {
+    return ChunkyCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Batas Waktu Layar',
+              style: AppTypography.uiHeading(fontSize: 16.0)),
+          Text(
+            'Pengingat istirahat yang lembut untuk anak.',
+            style: AppTypography.uiBody(
+                fontSize: 12.0, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.space12),
+          Wrap(
+            spacing: 8.0,
+            children: [
+              for (final o in _timeOptions)
+                ChoiceChip(
+                  label: Text('$o mnt'),
+                  selected: limit == o,
+                  onSelected: (_) => _setTimeLimit(o),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.space12),
+          OutlinedButton.icon(
+            onPressed: () => ScreenTimeDialog.show(context),
+            icon: const Icon(Icons.bedtime_rounded),
+            label: const Text('Pratinjau pengingat'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _audioCard(bool muted) {
+    return ChunkyCard(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Suara aplikasi',
+                    style: AppTypography.uiHeading(fontSize: 16.0)),
+                Text(
+                  muted ? 'Nonaktif' : 'Aktif',
+                  style: AppTypography.uiBody(
+                      fontSize: 12.0, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Switch(value: !muted, onChanged: (v) => _setMuted(!v)),
+        ],
+      ),
+    );
+  }
+
+  Widget _resetCard() {
+    return ChunkyCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Data perangkat',
+              style: AppTypography.uiHeading(fontSize: 16.0)),
+          Text(
+            'Hapus seluruh progres latihan di perangkat ini.',
+            style: AppTypography.uiBody(
+                fontSize: 12.0, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.space12),
+          OutlinedButton.icon(
+            onPressed: _resetData,
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: const Text('Hapus data'),
           ),
         ],
       ),

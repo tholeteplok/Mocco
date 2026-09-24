@@ -73,9 +73,11 @@ flutter:
   assets:
     - assets/images/objects/
     - assets/images/ui/
+    - assets/images/ui/buttons/
     - assets/images/mascot/
     - assets/audio/sfx/
     - assets/audio/voice/
+    - assets/audio/bgm/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

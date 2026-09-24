@@ -49,9 +49,9 @@ void main() {
     await tester.tap(find.widgetWithText(SyllableCard, 'ku'));
     await tester.pump();
 
-    // Child keeps control — tap Lanjut on celebration banner (no auto-advance)
+    // Child keeps control — tap Lanjut Latihan on celebration banner (no auto-advance)
     await tester.pump(const Duration(milliseconds: 500));
-    await tester.tap(find.text('Lanjut'));
+    await tester.tap(find.text('Lanjut Latihan'));
     await tester.pump();
 
     expect(completed, isTrue);

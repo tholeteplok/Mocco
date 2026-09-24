@@ -1,12 +1,15 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/sound_player.dart';
 import '../../../domain/entities/journey_node.dart';
 import '../../../domain/entities/letter_entity.dart';
 import '../../../domain/services/word_catalog.dart';
+import '../../widgets/buttons/bubble_icon_button.dart';
 
 // Emoji objek untuk angka (10 item)
 const _kCountEmoji = ['🍎', '⭐', '🐟', '🐤', '⚽', '🌸', '🍊', '🎈', '🦋', '🍓'];
@@ -105,18 +108,12 @@ class _NodeDetailScreenState extends State<NodeDetailScreen>
               ),
               child: Row(
                 children: [
-                  _CircleBtn(
-                    icon: Icons.arrow_back_rounded,
-                    color: color,
-                    bevel: bevel,
-                    onTap: widget.onBack ?? () => Navigator.of(context).pop(),
+                  BubbleIconButton.back(
+                    onPressed: widget.onBack ?? () => Navigator.of(context).pop(),
                   ),
                   const Spacer(),
-                  _CircleBtn(
-                    icon: Icons.volume_up_rounded,
-                    color: color,
-                    bevel: bevel,
-                    onTap: _playNodeAudio,
+                  BubbleIconButton.voice(
+                    onPressed: _playNodeAudio,
                   ),
                 ],
               ),
@@ -189,12 +186,14 @@ class _InteractiveHeroStageState extends State<_InteractiveHeroStage> {
     SoundPlayer.instance.playPop();
     SoundPlayer.instance.playNumber(_tappedIndices.length);
 
-    // Jika semua item berhasil disentuh, bunyikan chime sukses & pujian
+    // Jika semua item berhasil disentuh, bunyikan chime sukses & pujian bertahap
     if (_tappedIndices.length == widget.node.typeIndex) {
-      Future.delayed(const Duration(milliseconds: 300), () {
+      Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) {
           SoundPlayer.instance.playSuccess();
-          SoundPlayer.instance.playPraise();
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) SoundPlayer.instance.playPraise();
+          });
         }
       });
     }
@@ -205,6 +204,18 @@ class _InteractiveHeroStageState extends State<_InteractiveHeroStage> {
     final color = widget.node.primaryColor;
     final bevel = widget.node.bevelColor;
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final backdropWidth = ResponsiveHelper.value(
+      context,
+      mobile: math.min(340.0, screenWidth - 32.0),
+      tablet: 420.0,
+    );
+    final backdropHeight = ResponsiveHelper.value(
+      context,
+      mobile: 300.0,
+      tablet: 380.0,
+    );
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.space12),
@@ -213,12 +224,12 @@ class _InteractiveHeroStageState extends State<_InteractiveHeroStage> {
         children: [
           // Soft Organic Backdrop Stage (Siluet panggung organik ramah anak)
           Container(
-            width: 340,
-            height: 300,
+            width: backdropWidth,
+            height: backdropHeight,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: const BorderRadius.all(
-                Radius.elliptical(170, 150),
+              borderRadius: BorderRadius.all(
+                Radius.elliptical(backdropWidth / 2, backdropHeight / 2),
               ),
               boxShadow: [
                 BoxShadow(
@@ -243,21 +254,27 @@ class _InteractiveHeroStageState extends State<_InteractiveHeroStage> {
                 behavior: HitTestBehavior.opaque,
                 child: Column(
                   children: [
-                    Text(
-                      widget.node.label,
-                      style: AppTypography.learningDisplay(
-                        fontSize: 160.0,
-                        color: color,
-                      ).copyWith(
-                        shadows: [
-                          Shadow(
-                            color: bevel.withValues(alpha: 0.35),
-                            offset: const Offset(0, 6),
-                            blurRadius: 0,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          widget.node.label,
+                          style: AppTypography.learningDisplay(
+                            fontSize: 160.0,
+                            color: color,
+                          ).copyWith(
+                            shadows: [
+                              Shadow(
+                                color: bevel.withValues(alpha: 0.35),
+                                offset: const Offset(0, 6),
+                                blurRadius: 0,
+                              ),
+                            ],
                           ),
-                        ],
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -661,47 +678,3 @@ class _LatihBtnState extends State<_LatihBtn> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Circle Button
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _CircleBtn extends StatelessWidget {
-  const _CircleBtn({
-    required this.icon,
-    required this.color,
-    required this.bevel,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color color;
-  final Color bevel;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        SoundPlayer.instance.playPop();
-        onTap();
-      },
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFFDF9),
-          shape: BoxShape.circle,
-          border: Border.all(color: color.withValues(alpha: 0.5), width: 2.5),
-          boxShadow: [
-            BoxShadow(
-              color: bevel.withValues(alpha: 0.25),
-              offset: const Offset(0, 3),
-              blurRadius: 0,
-            ),
-          ],
-        ),
-        child: Icon(icon, color: color, size: 24),
-      ),
-    );
-  }
-}

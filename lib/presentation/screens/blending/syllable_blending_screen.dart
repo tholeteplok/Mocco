@@ -4,6 +4,7 @@ import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/utils/responsive_helper.dart';
 import '../../../core/utils/sound_player.dart';
+import '../../../data/datasources/mastery_local_datasource.dart';
 import '../../../domain/entities/word_entity.dart';
 import '../../../domain/services/word_catalog.dart';
 import '../../widgets/blending/syllable_card.dart';
@@ -49,6 +50,7 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
   late final AnimationController _blendAnimController;
   late final Animation<double> _slideAnimation;
   final List<Timer> _activeTimers = [];
+  int _currentWordAttempts = 0;
 
   WordEntity get _currentWord => _words[_currentIndex];
 
@@ -82,6 +84,7 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
     _slot2 = null;
     _isSuccess = false;
     _isLockInput = false;
+    _currentWordAttempts = 0;
     _options = WordCatalog.generateSyllableOptions(_currentWord);
   }
 
@@ -127,6 +130,14 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
 
   void _verifyAnswer() {
     if (_slot1 == _currentWord.syllable1 && _slot2 == _currentWord.syllable2) {
+      final wordId = 'word_${_currentWord.word.toLowerCase()}';
+      final attempts = _currentWordAttempts + 1;
+      HiveMasteryLocalDataSource().recordSessionResult(
+        id: wordId,
+        attempts: attempts,
+        correct: 1,
+      );
+
       // Correct! Child keeps full control — no auto-advance.
       setState(() {
         _isSuccess = true;
@@ -139,10 +150,11 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
         context: context,
         title: 'Hebat Sekali!',
         subtitle: 'Kata "${_currentWord.word}" berhasil dirangkai!',
-        buttonText: 'Lanjut',
+        buttonText: 'Lanjut Latihan',
         onNextPressed: _advanceToNext,
       );
     } else {
+      _currentWordAttempts++;
       // Incorrect: gentle retry sound & soft bounce back
       SoundPlayer.instance.playSoftRetry();
       _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
@@ -176,20 +188,24 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
   @override
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
-      body: Column(
-        children: [
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: ResponsiveHelper.constrainMaxWidth(
+                  context: context,
+                  child: Column(
+                    children: [
           // Top Navigation Bar
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.space8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                BubbleIconButton(
-                  icon: Icons.arrow_back_rounded,
-                  borderColor: AppColors.blendingPrimary,
-                  bevelColor: AppColors.blendingBevel,
+                BubbleIconButton.back(
                   onPressed: () {
-                    SoundPlayer.instance.playPop();
                     if (widget.onBack != null) {
                       widget.onBack!();
                     } else {
@@ -312,7 +328,13 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
               }).toList(),
             ),
           ),
-        ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

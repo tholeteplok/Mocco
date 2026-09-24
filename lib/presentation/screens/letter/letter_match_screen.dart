@@ -105,7 +105,7 @@ class _LetterMatchScreenState extends State<LetterMatchScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.space8),
           child: Column(
             children: [
               Row(
@@ -123,11 +123,15 @@ class _LetterMatchScreenState extends State<LetterMatchScreen> {
                     },
                   ),
                   const SizedBox(width: AppSpacing.space12),
-                  Text(
-                    'Pasangkan Huruf! 🧩',
-                    style: AppTypography.uiHeading(
-                      fontSize: 22.0,
-                      color: AppColors.textPrimary,
+                  Flexible(
+                    child: Text(
+                      'Pasangkan Huruf! 🧩',
+                      style: AppTypography.uiHeading(
+                        fontSize: 22.0,
+                        color: AppColors.textPrimary,
+                      ),
+                      softWrap: true,
+                      maxLines: 2,
                     ),
                   ),
                 ],

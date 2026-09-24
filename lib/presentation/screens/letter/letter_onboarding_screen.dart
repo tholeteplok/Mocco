@@ -5,8 +5,10 @@ import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/sound_player.dart';
+import '../../../data/datasources/mastery_local_datasource.dart';
 import '../../../domain/entities/letter_entity.dart';
 import '../../../domain/services/letter_distractor_generator.dart';
+import '../../widgets/buttons/adaptive_tracing_cta.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/buttons/chunky_button.dart';
 import '../../widgets/cards/flashcard_answer.dart';
@@ -62,6 +64,8 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
   bool _isObjectTapped = false;
 
   final List<Timer> _activeTimers = [];
+  int _sessionAttempts = 0;
+  int _sessionCorrect = 0;
 
   LetterEntity get _currentLetter =>
       LetterEntity.alphabet[_currentIndex.clamp(0, LetterEntity.alphabet.length - 1)];
@@ -153,6 +157,14 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
       });
       _prepareCurrentStep();
     } else {
+      final letterChar = _currentLetter.char.toLowerCase();
+      final attempts = _sessionAttempts > 0 ? _sessionAttempts : widget.totalSteps;
+      final correct = _sessionCorrect > 0 ? _sessionCorrect : widget.totalSteps;
+      HiveMasteryLocalDataSource().recordSessionResult(
+        id: 'letter_$letterChar',
+        attempts: attempts,
+        correct: correct,
+      );
       widget.onCompleted?.call();
     }
   }
@@ -161,12 +173,14 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
     if (_isAnswerCorrect) return;
 
     setState(() => _selectedOption = option);
+    _sessionAttempts++;
 
     final bool matches = _isMatchingStep
         ? option == _currentLetter.lowercaseChar
         : option.toLowerCase() == _currentLetter.char.toLowerCase();
 
     if (matches) {
+      _sessionCorrect++;
       // Jawaban Benar
       setState(() => _isAnswerCorrect = true);
       SoundPlayer.instance.playSuccess();
@@ -222,7 +236,7 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.space16),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.space8),
           child: _isTracingStep
               ? _buildTracingStage()
               : _isMatchingStep
@@ -254,11 +268,15 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
               onPressed: _playLetterAudio,
             ),
             const SizedBox(width: AppSpacing.space12),
-            Text(
-              'Tebalkan huruf ${letter.pairDisplay}!',
-              style: AppTypography.uiHeading(
-                fontSize: 22.0,
-                color: AppColors.textPrimary,
+            Flexible(
+              child: Text(
+                'Tebalkan huruf ${letter.pairDisplay}!',
+                style: AppTypography.uiHeading(
+                  fontSize: 22.0,
+                  color: AppColors.textPrimary,
+                ),
+                softWrap: true,
+                maxLines: 2,
               ),
             ),
           ],
@@ -283,7 +301,6 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
                 _isTracingCompleted = true;
                 _hasUserProgress = true;
               });
-              SoundPlayer.instance.playSuccess();
               CelebrationPopup.show(
                 context: context,
                 title: 'Luar Biasa!',
@@ -316,59 +333,28 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
         ),
         const SizedBox(height: AppSpacing.space24),
 
-        // Tombol CTA Adaptif: [ Tebalkan Dulu Ya ✏️ ] / [ Coba Lagi 🧽 ] / [ Lanjut Latihan ➜ ]
-        if (_isTracingCompleted)
-          SizedBox(
-            width: 260.0,
-            child: ChunkyButton(
-              text: 'Lanjut Latihan ➜',
-              primaryColor: AppColors.brandMint,
-              bevelColor: AppColors.brandMintDark,
-              textColor: AppColors.textWhite,
-              fontSize: 16.0,
-              height: 52.0,
-              onPressed: () {
-                SoundPlayer.instance.playSuccess();
-                _advanceToNext();
-              },
-            ),
-          )
-        else if (_hasUserProgress)
-          SizedBox(
-            width: 260.0,
-            child: ChunkyButton(
-              text: 'Coba Lagi 🧽',
-              primaryColor: AppColors.retryBackground,
-              bevelColor: AppColors.retryBevel,
-              textColor: const Color(0xFFC05621),
-              fontSize: 16.0,
-              height: 52.0,
-              onPressed: () {
-                SoundPlayer.instance.playEncouragement();
-                _canvasKey.currentState?.clear();
-                setState(() {
-                  _hasUserProgress = false;
-                  _isTracingCompleted = false;
-                });
-              },
-            ),
-          )
-        else
-          SizedBox(
-            width: 260.0,
-            child: ChunkyButton(
-              text: 'Tebalkan Dulu Ya ✏️',
-              primaryColor: AppColors.cardSurface,
-              bevelColor: AppColors.cardBevel,
-              textColor: AppColors.textSecondary,
-              fontSize: 16.0,
-              height: 52.0,
-              onPressed: () {
-                SoundPlayer.instance.playPromptTebalkan();
-                _canvasKey.currentState?.playDemo();
-              },
-            ),
-          ),
+        // Tombol CTA Adaptif Sentral: [ Tebalkan Dulu Ya ✏️ ] / [ Coba Lagi 🧽 ] / [ Lanjut Latihan ➜ ]
+        AdaptiveTracingCta(
+          isCompleted: _isTracingCompleted,
+          hasUserProgress: _hasUserProgress,
+          advanceText: 'Lanjut Latihan ➜',
+          onAdvance: () {
+            SoundPlayer.instance.playSuccess();
+            _advanceToNext();
+          },
+          onRetry: () {
+            SoundPlayer.instance.playEncouragement();
+            _canvasKey.currentState?.clear();
+            setState(() {
+              _hasUserProgress = false;
+              _isTracingCompleted = false;
+            });
+          },
+          onPrompt: () {
+            SoundPlayer.instance.playPromptTebalkan();
+            _canvasKey.currentState?.playDemo();
+          },
+        ),
         const SizedBox(height: AppSpacing.space16),
       ],
     );
@@ -395,11 +381,15 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
               onPressed: _playLetterAudio,
             ),
             const SizedBox(width: AppSpacing.space12),
-            Text(
-              'Pasangkan huruf ${letter.char}! 🧩',
-              style: AppTypography.uiHeading(
-                fontSize: 22.0,
-                color: AppColors.textPrimary,
+            Flexible(
+              child: Text(
+                'Pasangkan huruf ${letter.char}! 🧩',
+                style: AppTypography.uiHeading(
+                  fontSize: 22.0,
+                  color: AppColors.textPrimary,
+                ),
+                softWrap: true,
+                maxLines: 2,
               ),
             ),
           ],
@@ -501,11 +491,15 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
               onPressed: _playLetterAudio,
             ),
             const SizedBox(width: AppSpacing.space12),
-            Text(
-              'Mana huruf awal ${letter.exampleWord}?',
-              style: AppTypography.uiHeading(
-                fontSize: 22.0,
-                color: AppColors.textPrimary,
+            Flexible(
+              child: Text(
+                'Mana huruf awal ${letter.exampleWord}?',
+                style: AppTypography.uiHeading(
+                  fontSize: 22.0,
+                  color: AppColors.textPrimary,
+                ),
+                softWrap: true,
+                maxLines: 2,
               ),
             ),
           ],

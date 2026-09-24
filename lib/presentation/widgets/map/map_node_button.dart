@@ -22,6 +22,7 @@ class MapNodeButton extends StatefulWidget {
     this.primaryColor = AppColors.numberPrimary,
     this.bevelColor = AppColors.numberBevel,
     this.size = 80.0,
+    this.showActiveMascot = false,
   });
 
   final String label;
@@ -30,6 +31,7 @@ class MapNodeButton extends StatefulWidget {
   final Color primaryColor;
   final Color bevelColor;
   final double size;
+  final bool showActiveMascot;
 
   @override
   State<MapNodeButton> createState() => _MapNodeButtonState();
@@ -79,13 +81,13 @@ class _MapNodeButtonState extends State<MapNodeButton>
   Widget build(BuildContext context) {
     final isLocked = widget.status == MapNodeStatus.locked;
     final isActive = widget.status == MapNodeStatus.active;
-    final isCompleted = widget.status == MapNodeStatus.completed;
 
     final stoneColor = isLocked ? const Color(0xFFDCD8D3) : widget.primaryColor;
     final bevelColor = isLocked ? const Color(0xFFB0ABA4) : widget.bevelColor;
 
-    final bevelHeight = _isPressed ? 2.0 : 6.0;
-    final topOffset = _isPressed ? 4.0 : 0.0;
+    final bevelNormal = widget.size < 40.0 ? 4.0 : 5.0;
+    final bevelHeight = _isPressed ? 1.5 : bevelNormal;
+    final topOffset = _isPressed ? 3.0 : 0.0;
 
     Widget content = GestureDetector(
       onTapDown: isLocked ? null : (_) => setState(() => _isPressed = true),
@@ -100,7 +102,7 @@ class _MapNodeButtonState extends State<MapNodeButton>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
         curve: Curves.easeOut,
-        margin: EdgeInsets.only(top: topOffset, bottom: 6.0 - topOffset),
+        margin: EdgeInsets.only(top: topOffset, bottom: bevelNormal - topOffset),
         width: widget.size,
         height: widget.size,
         decoration: BoxDecoration(
@@ -121,7 +123,7 @@ class _MapNodeButtonState extends State<MapNodeButton>
           ),
           border: Border.all(
             color: bevelColor,
-            width: 3.5,
+            width: widget.size < 40.0 ? 2.5 : 3.0,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
           boxShadow: [
@@ -148,7 +150,7 @@ class _MapNodeButtonState extends State<MapNodeButton>
             if (isLocked)
               Icon(
                 Icons.lock_rounded,
-                size: (widget.size * 0.38).clamp(18.0, 30.0),
+                size: (widget.size * 0.42).clamp(15.0, 26.0),
                 color: const Color(0xFF8C867F),
               )
             else
@@ -156,52 +158,23 @@ class _MapNodeButtonState extends State<MapNodeButton>
                 widget.label,
                 textAlign: TextAlign.center,
                 style: AppTypography.learningDisplay(
-                  fontSize: widget.label.length > 4
-                      ? (widget.size * 0.24).clamp(12.0, 22.0)
-                      : widget.label.length > 1
-                          ? (widget.size * 0.32).clamp(16.0, 26.0)
-                          : (widget.size * 0.38).clamp(18.0, 32.0),
+                  fontSize: widget.label.length > 2
+                      ? (widget.size * 0.30).clamp(11.0, 20.0)
+                      : widget.label.length == 2
+                          ? (widget.size * 0.38).clamp(14.0, 24.0)
+                          : (widget.size * 0.44).clamp(16.0, 28.0),
                   color: AppColors.textPrimary,
                 ),
               ),
 
             // Perched Exploring Mascot for Active node (Living Navigator)
-            if (isActive)
+            if (isActive && widget.showActiveMascot)
               const Positioned(
                 top: -112.0,
                 child: MascotWidget(
                   mood: MascotMood.exploring,
                   size: 130.0,
                   animate: true,
-                ),
-              ),
-
-            // 3 Stars badge for Completed node
-            if (isCompleted)
-              Positioned(
-                bottom: -10.0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 1.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10.0),
-                    border: Border.all(color: AppColors.retryBevel, width: 1.5),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x33000000),
-                        offset: Offset(0, 2.0),
-                        blurRadius: 0.0,
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.star_rounded, size: 13.0, color: AppColors.retryBevel),
-                      Icon(Icons.star_rounded, size: 15.0, color: AppColors.retryBevel),
-                      Icon(Icons.star_rounded, size: 13.0, color: AppColors.retryBevel),
-                    ],
-                  ),
                 ),
               ),
           ],

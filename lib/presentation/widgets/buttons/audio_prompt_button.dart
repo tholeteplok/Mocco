@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../../core/tokens/app_colors.dart';
-import '../../../core/tokens/app_spacing.dart';
+import '../../../core/utils/sound_player.dart';
 
 /// Audio Prompt Button for Pre-Readers (V0.7, V24, V32)
-/// Replaces written text instructions with an interactive chunky speaker button.
+/// Replaces written text instructions with an interactive 3D clay speaker button.
 /// Children tap this button to hear the voice instruction repeatedly.
+/// PENTING: Tidak dibingkai dengan container/border/box-shadow artifisial.
 class AudioPromptButton extends StatefulWidget {
   const AudioPromptButton({
     super.key,
@@ -54,53 +56,37 @@ class _AudioPromptButtonState extends State<AudioPromptButton>
 
   @override
   Widget build(BuildContext context) {
-    final bevelHeight = _isPressed ? AppSpacing.bevelPressed : AppSpacing.bevelNormal;
-    final topOffset = _isPressed ? AppSpacing.pressOffsetY : 0.0;
-
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+        SoundPlayer.instance.playPop();
+      },
       onTapUp: (_) {
         setState(() => _isPressed = false);
         widget.onPressed();
       },
       onTapCancel: () => setState(() => _isPressed = false),
+      behavior: HitTestBehavior.opaque,
       child: AnimatedBuilder(
         animation: _pulseAnimation,
         builder: (context, child) {
           return Transform.scale(
-            scale: _isPressed ? 1.0 : _pulseAnimation.value,
+            scale: _isPressed ? 0.94 : _pulseAnimation.value,
+            alignment: Alignment.center,
             child: child,
           );
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 60),
-          curve: Curves.easeOut,
-          margin: EdgeInsets.only(
-            top: topOffset,
-            bottom: AppSpacing.pressOffsetY - topOffset,
-          ),
+        child: SizedBox(
           width: widget.size,
           height: widget.size,
-          decoration: BoxDecoration(
-            color: widget.primaryColor,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: widget.borderColor,
-              width: 3.5,
+          child: Center(
+            child: Image.asset(
+              _isPressed ? AppAssets.btnVoicePressed : AppAssets.btnVoice,
+              width: widget.size,
+              height: widget.size,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.bevelColor,
-                offset: Offset(0, bevelHeight),
-                blurRadius: 0,
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Icon(
-            Icons.volume_up_rounded,
-            size: widget.size * 0.55,
-            color: widget.iconColor,
           ),
         ),
       ),

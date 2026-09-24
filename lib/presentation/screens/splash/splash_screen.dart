@@ -7,13 +7,13 @@ import '../../../core/tokens/app_typography.dart';
 import '../../../core/utils/sound_player.dart';
 import '../../widgets/mascot/mascot_widget.dart';
 import '../../widgets/text/clay_brand_text.dart';
-import '../journey/journey_screen.dart';
+import '../map/adventure_map_screen.dart';
 
 /// Layar pembuka (Splash Screen) ramah anak.
 ///
 /// Menggunakan tipografi [Fredoka] yang selaras dengan teks buku pada icon launcher,
 /// maskot Mocco pose membaca ([MascotMood.reading]), dan warna latar warm cream
-/// yang identik dengan [JourneyScreen] sehingga transisinya bebas flicker (kedip).
+/// yang identik dengan [AdventureMapScreen] sehingga transisinya bebas flicker (kedip).
 class SplashScreen extends StatefulWidget {
   const SplashScreen({
     super.key,
@@ -25,7 +25,7 @@ class SplashScreen extends StatefulWidget {
   /// Durasi tampilan splash sebelum otomatis berpindah.
   final Duration displayDuration;
 
-  /// Layar tujuan setelah splash selesai (default: [JourneyScreen]).
+  /// Layar tujuan setelah splash selesai (default: [AdventureMapScreen]).
   final Widget? nextScreen;
 
   /// Apakah memutar audio pop ramah anak saat masuk.
@@ -77,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
   void _navigateToNextScreen() {
     if (!mounted) return;
 
-    final target = widget.nextScreen ?? const JourneyScreen();
+    final target = widget.nextScreen ?? const AdventureMapScreen();
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
