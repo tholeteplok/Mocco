@@ -272,15 +272,27 @@ class SingleImageMapCanvas extends StatelessWidget {
                   ),
                 ),
 
-                // 2. Lapisan Node & Maskot di Sepanjang Jalan
+                // 2. Lapisan Node Selesai & Terkunci (Background Nodes)
                 for (int i = 0; i < nodes.length; i++)
-                  _buildPositionedNode(
-                    index: i,
-                    totalNodes: nodes.length,
-                    node: nodes[i],
-                    screenWidth: screenWidth,
-                    canvasHeight: canvasHeight,
-                  ),
+                  if (nodes[i].status != MapNodeStatus.active)
+                    _buildPositionedNode(
+                      index: i,
+                      totalNodes: nodes.length,
+                      node: nodes[i],
+                      screenWidth: screenWidth,
+                      canvasHeight: canvasHeight,
+                    ),
+
+                // 3. Lapisan Node Aktif & Maskot (Foreground - Selalu di Atas / di Depan)
+                for (int i = 0; i < nodes.length; i++)
+                  if (nodes[i].status == MapNodeStatus.active)
+                    _buildPositionedNode(
+                      index: i,
+                      totalNodes: nodes.length,
+                      node: nodes[i],
+                      screenWidth: screenWidth,
+                      canvasHeight: canvasHeight,
+                    ),
               ],
             ),
           ),
@@ -327,10 +339,10 @@ class SingleImageMapCanvas extends StatelessWidget {
     );
 
     if (isCurrentActive) {
-      // Maskot bertengger di atas (Center Top) node aktif secara simetris
+      // Maskot bertengger di atas (Center Top) node aktif secara simetris di depan
       const mascotW = 46.0;
       const mascotH = 46.0;
-      const mascotTopOffset = -mascotH - 12.0;
+      const mascotTopOffset = -mascotH - 2.0;
 
       return Positioned(
         key: node.nodeKey,

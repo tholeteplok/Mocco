@@ -16,6 +16,8 @@ class SoundPlayer {
   final AudioPlayer _voicePlayer = AudioPlayer();
   final AudioPlayer _bgmPlayer = AudioPlayer();
 
+  DateTime? _lastSuccessPlayTime;
+
   bool _isMuted = false;
   bool get isMuted => _isMuted;
   bool _isBgmActive = false;
@@ -111,12 +113,24 @@ class SoundPlayer {
   /// Menggunakan dedicated _celebrationPlayer agar tidak pernah terpotong SFX tombol
   Future<void> playSuccess() async {
     if (_isMuted) return;
+    _lastSuccessPlayTime = DateTime.now();
     try {
       await _celebrationPlayer.stop();
       await _celebrationPlayer.play(AssetSource(AppAssets.sfxChimeSuccess.replaceFirst('assets/', '')));
     } catch (e) {
       debugPrint('Celebration chime play error: $e');
     }
+  }
+
+  /// Memutar rangkaian selebrasi lengkap tersentralisasi:
+  /// 1. Lonceng kemenangan (chime_success.mp3 - 1,23 detik)
+  /// 2. Menunggu sampai nada lonceng selesai + jeda nafas natural 150 ms (~1,38 detik total)
+  /// 3. Suara pujian maskot acak ("Hebat!", "Pintar sekali!", "Bagus!") dengan auto BGM-ducking
+  Future<void> playCelebration({Duration gap = const Duration(milliseconds: 150)}) async {
+    if (_isMuted) return;
+    await playSuccess();
+    await Future.delayed(const Duration(milliseconds: 1230) + gap);
+    await playPraise();
   }
 
   /// Plays soft gentle retry sound (V0.4, no harsh buzzer)
@@ -204,8 +218,17 @@ class SoundPlayer {
   Future<void> playZone(String zone) async => playVoice(AppAssets.zoneVoice(zone));
 
   /// Plays randomized positive praise voice ("Hebat!", "Pintar sekali!", "Bagus!")
-  /// Hanya memilih dari berkas yang 100% ada di disk (eliminasi 50% kegagalan senyap)
+  /// Otomatis menunggu dentang chime_success selesai jika baru saja diputar
   Future<void> playPraise() async {
+    if (_isMuted) return;
+    if (_lastSuccessPlayTime != null) {
+      final elapsed = DateTime.now().difference(_lastSuccessPlayTime!);
+      const requiredWait = Duration(milliseconds: 1380); // 1230ms chime + 150ms gap
+      if (elapsed < requiredWait) {
+        final remaining = requiredWait - elapsed;
+        await Future.delayed(remaining);
+      }
+    }
     const praises = [
       AppAssets.voiceHebat,
       AppAssets.voicePintar,

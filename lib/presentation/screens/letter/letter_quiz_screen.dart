@@ -105,10 +105,7 @@ class _LetterQuizScreenState extends State<LetterQuizScreen> {
     if (option.toLowerCase() == _targetLetter.char.toLowerCase()) {
       // Correct answer! Child keeps full control — no auto-advance.
       setState(() => _isAnswerCorrect = true);
-      SoundPlayer.instance.playSuccess();
-      _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
-        if (mounted) SoundPlayer.instance.playPraise();
-      }));
+      SoundPlayer.instance.playCelebration();
       CelebrationPopup.show(
         context: context,
         title: 'Hebat Sekali!',

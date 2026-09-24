@@ -137,10 +137,7 @@ class _CountingScreenState extends State<CountingScreen> {
       _sessionCorrect++;
       // Correct! Child keeps full control — no auto-advance (v2.0 dopamine loop).
       setState(() => _isAnswerCorrect = true);
-      SoundPlayer.instance.playSuccess();
-      _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
-        if (mounted) SoundPlayer.instance.playPraise();
-      }));
+      SoundPlayer.instance.playCelebration();
       CelebrationPopup.show(
         context: context,
         title: 'Luar Biasa!',

@@ -183,10 +183,7 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
       _sessionCorrect++;
       // Jawaban Benar
       setState(() => _isAnswerCorrect = true);
-      SoundPlayer.instance.playSuccess();
-      _activeTimers.add(Timer(const Duration(milliseconds: 300), () {
-        if (mounted) SoundPlayer.instance.playPraise();
-      }));
+      SoundPlayer.instance.playCelebration();
       CelebrationPopup.show(
         context: context,
         title: _isMatchingStep ? 'Hebat!' : 'Luar Biasa!',

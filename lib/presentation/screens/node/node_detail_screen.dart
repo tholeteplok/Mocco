@@ -186,14 +186,11 @@ class _InteractiveHeroStageState extends State<_InteractiveHeroStage> {
     SoundPlayer.instance.playPop();
     SoundPlayer.instance.playNumber(_tappedIndices.length);
 
-    // Jika semua item berhasil disentuh, bunyikan chime sukses & pujian bertahap
+    // Jika semua item berhasil disentuh, bunyikan rangkaian selebrasi lengkap
     if (_tappedIndices.length == widget.node.typeIndex) {
-      Future.delayed(const Duration(milliseconds: 200), () {
+      Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
-          SoundPlayer.instance.playSuccess();
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) SoundPlayer.instance.playPraise();
-          });
+          SoundPlayer.instance.playCelebration();
         }
       });
     }

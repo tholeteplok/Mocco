@@ -71,20 +71,17 @@ class _LetterMatchScreenState extends State<LetterMatchScreen> {
         _matches[upper] = lower;
         _highlightLower = null;
       });
-      SoundPlayer.instance.playSuccess();
       if (_matches.length == _pairs.length) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          if (mounted) {
-            SoundPlayer.instance.playPraise();
-            CelebrationPopup.show(
-              context: context,
-              title: 'Luar Biasa!',
-              subtitle: 'Semua huruf berhasil dipasangkan!',
-              buttonText: _currentStep < widget.totalSteps ? 'Lanjut' : 'Selesai',
-              onNextPressed: _advance,
-            );
-          }
-        });
+        SoundPlayer.instance.playCelebration();
+        CelebrationPopup.show(
+          context: context,
+          title: 'Luar Biasa!',
+          subtitle: 'Semua huruf berhasil dipasangkan!',
+          buttonText: _currentStep < widget.totalSteps ? 'Lanjut' : 'Selesai',
+          onNextPressed: _advance,
+        );
+      } else {
+        SoundPlayer.instance.playSuccess();
       }
     } else {
       SoundPlayer.instance.playSoftRetry();
