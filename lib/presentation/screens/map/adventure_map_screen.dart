@@ -71,6 +71,7 @@ class _AdventureMapScreenState extends State<AdventureMapScreen> {
             ? widget.unlockedNumberIndex
             : 1);
     _loadPersistedProgress();
+    SoundPlayer.instance.syncMuteFromStorage();
     SoundPlayer.instance.playBgmMap();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToActiveNode(animate: false);
@@ -205,10 +206,13 @@ class _AdventureMapScreenState extends State<AdventureMapScreen> {
         ? [words[node.typeIndex]]
         : [words.first];
 
+    final isGrand = node.globalIndex == JourneyCatalog.totalNodes;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (exerciseContext) => SyllableBlendingScreen(
           words: wordList,
+          isGrandCompletion: isGrand,
           onCompleted: () {
             Navigator.of(exerciseContext).pop();
             _unlockNextNode(node);
@@ -281,9 +285,14 @@ class _AdventureMapScreenState extends State<AdventureMapScreen> {
                   onParentTap: () async {
                     final ok = await ParentGateDialog.show(context);
                     if (ok == true && context.mounted) {
-                      Navigator.of(context).push(
+                      SoundPlayer.instance.stopBgm();
+                      await Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const ParentDashboardScreen()),
                       );
+                      if (context.mounted) {
+                        setState(() {});
+                        SoundPlayer.instance.playBgmMap();
+                      }
                     }
                   },
                 ),

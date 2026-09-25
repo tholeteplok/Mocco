@@ -11,6 +11,7 @@ import '../../widgets/blending/syllable_card.dart';
 import '../../widgets/blending/word_slot.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/buttons/bubble_icon_button.dart';
+import '../../widgets/dialogs/level_up_dialog.dart';
 import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/jelly_progress_bar.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
@@ -23,11 +24,13 @@ class SyllableBlendingScreen extends StatefulWidget {
   const SyllableBlendingScreen({
     super.key,
     this.words,
+    this.isGrandCompletion = false,
     this.onCompleted,
     this.onBack,
   });
 
   final List<WordEntity>? words;
+  final bool isGrandCompletion;
   final VoidCallback? onCompleted;
   final VoidCallback? onBack;
 
@@ -145,14 +148,25 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
       });
 
       _blendAnimController.forward();
-      SoundPlayer.instance.playSuccess();
-      CelebrationPopup.show(
-        context: context,
-        title: 'Hebat Sekali!',
-        subtitle: 'Kata "${_currentWord.word}" berhasil dirangkai!',
-        buttonText: 'Lanjut Latihan',
-        onNextPressed: _advanceToNext,
-      );
+      if (_currentIndex < _words.length - 1) {
+        SoundPlayer.instance.playSuccess();
+        CelebrationPopup.show(
+          context: context,
+          title: 'Hebat Sekali!',
+          subtitle: 'Kata "${_currentWord.word}" berhasil dirangkai!',
+          buttonText: 'Lanjut Latihan',
+          onNextPressed: _advanceToNext,
+        );
+      } else {
+        LevelUpDialog.show(
+          context: context,
+          milestoneType: widget.isGrandCompletion
+              ? LevelMilestoneType.grandCompletion
+              : LevelMilestoneType.standard,
+          buttonText: 'Lanjut Latihan',
+          onContinue: _advanceToNext,
+        );
+      }
     } else {
       _currentWordAttempts++;
       // Incorrect: gentle retry sound & soft bounce back

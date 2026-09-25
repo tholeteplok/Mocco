@@ -12,6 +12,7 @@ import '../../widgets/buttons/adaptive_tracing_cta.dart';
 import '../../widgets/buttons/audio_prompt_button.dart';
 import '../../widgets/buttons/chunky_button.dart';
 import '../../widgets/cards/flashcard_answer.dart';
+import '../../widgets/dialogs/level_up_dialog.dart';
 import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
@@ -183,16 +184,34 @@ class _LetterOnboardingScreenState extends State<LetterOnboardingScreen> {
       _sessionCorrect++;
       // Jawaban Benar
       setState(() => _isAnswerCorrect = true);
-      SoundPlayer.instance.playCelebration();
-      CelebrationPopup.show(
-        context: context,
-        title: _isMatchingStep ? 'Hebat!' : 'Luar Biasa!',
-        subtitle: _isMatchingStep
-            ? 'Pasangan ${_currentLetter.char} dan ${_currentLetter.lowercaseChar} cocok!'
-            : 'Kamu menemukan huruf ${_currentLetter.char}!',
-        buttonText: _currentStep < widget.totalSteps ? 'Lanjut' : 'Selesai',
-        onNextPressed: _advanceToNext,
-      );
+      if (_currentStep < widget.totalSteps) {
+        SoundPlayer.instance.playCelebration();
+        CelebrationPopup.show(
+          context: context,
+          title: _isMatchingStep ? 'Hebat!' : 'Luar Biasa!',
+          subtitle: _isMatchingStep
+              ? 'Pasangan ${_currentLetter.char} dan ${_currentLetter.lowercaseChar} cocok!'
+              : 'Kamu menemukan huruf ${_currentLetter.char}!',
+          buttonText: 'Lanjut',
+          onNextPressed: _advanceToNext,
+        );
+      } else {
+        LevelMilestoneType milestone;
+        if (widget.letterIndex == 12) {
+          // Huruf M (13th letter, 0-indexed 12) -> Halfway Alphabet Milestone!
+          milestone = LevelMilestoneType.halfwayAlphabet;
+        } else if (widget.letterIndex == 25) {
+          // Huruf Z (26th letter, 0-indexed 25) -> Zone Huruf Milestone!
+          milestone = LevelMilestoneType.zoneHuruf;
+        } else {
+          milestone = LevelMilestoneType.standard;
+        }
+        LevelUpDialog.show(
+          context: context,
+          milestoneType: milestone,
+          onContinue: _advanceToNext,
+        );
+      }
     } else {
       // Soft retry ramah anak
       SoundPlayer.instance.playSoftRetry();

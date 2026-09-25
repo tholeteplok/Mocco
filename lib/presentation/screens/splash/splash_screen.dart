@@ -17,7 +17,7 @@ import '../map/adventure_map_screen.dart';
 class SplashScreen extends StatefulWidget {
   const SplashScreen({
     super.key,
-    this.displayDuration = const Duration(milliseconds: 2200),
+    this.displayDuration = const Duration(milliseconds: 2800),
     this.nextScreen,
     this.enableAudio = true,
   });
@@ -66,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (widget.enableAudio) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          SoundPlayer.instance.playPop();
+          SoundPlayer.instance.playIntro();
         }
       });
     }

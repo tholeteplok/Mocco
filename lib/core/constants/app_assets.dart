@@ -75,6 +75,7 @@ abstract final class AppAssets {
   static const String btnReplay = '$_buttons/ic_replay.png';
   static const String btnReplayPressed = '$_buttons/ic_replay_pressed.png';
   static const String icStar = '$_buttons/ic_star.png';
+  static const String icTrophy = '$_buttons/ic_trophy.png';
 
   // --- SFX (Tactile Sound Effects) ---
   static const String sfxPopWood = '$_sfx/pop_wood.mp3';
@@ -85,6 +86,8 @@ abstract final class AppAssets {
   static const String sfxCardFlip = '$_sfx/card_flip.mp3';
   static const String sfxPopupWhoosh = '$_sfx/popup_whoosh.mp3';
   static const String sfxMuteClick = '$_sfx/mute_click.mp3';
+  static const String sfxIntro = '$_sfx/intro.mp3';
+  static const String sfxLevelUp = '$_sfx/levelUp.mp3';
 
   // --- BGM (Background Music — Map/Home Loop Only) ---
   static const String _bgm = '$_audio/bgm';

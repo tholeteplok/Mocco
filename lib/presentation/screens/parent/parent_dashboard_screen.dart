@@ -11,6 +11,7 @@ import '../../../domain/services/parent_stats.dart';
 import '../../widgets/cards/chunky_card.dart';
 import '../../widgets/dialogs/parent_gate_dialog.dart';
 import '../../widgets/dialogs/screen_time_dialog.dart';
+import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
 
 class _DashboardData {
@@ -34,7 +35,6 @@ class ParentDashboardScreen extends StatefulWidget {
 
 class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   static const String _timeLimitKey = '__system_time_limit';
-  static const String _muteKey = '__system_mute';
   static const List<int> _timeOptions = [15, 30, 45, 60];
   late Future<_DashboardData> _future;
 
@@ -57,17 +57,13 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       final records = await ds.getAllRecords();
       final globalIndex = await ds.getGlobalUnlockedIndex();
       int limit = 30;
-      bool muted = false;
       try {
         if (Hive.isBoxOpen(HiveMasteryLocalDataSource.boxName)) {
           final box = Hive.box(HiveMasteryLocalDataSource.boxName);
           limit = (box.get(_timeLimitKey) as num?)?.toInt() ?? 30;
-          muted = (box.get(_muteKey) as bool?) ?? false;
         }
       } catch (_) {}
-      try {
-        SoundPlayer.instance.setMuted(muted);
-      } catch (_) {}
+      final muted = SoundPlayer.instance.isMuted;
       return _DashboardData(
         ParentStatsService.compute(records, globalIndex),
         limit,
@@ -77,7 +73,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       return _DashboardData(
         ParentStatsService.compute(const [], 1),
         30,
-        false,
+        SoundPlayer.instance.isMuted,
       );
     }
   }
@@ -93,10 +89,7 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     _refresh();
   }
 
-  Future<void> _setMuted(bool v) async {
-    try {
-      await Hive.box(HiveMasteryLocalDataSource.boxName).put(_muteKey, v);
-    } catch (_) {}
+  void _setMuted(bool v) {
     SoundPlayer.instance.setMuted(v);
     _refresh();
   }
@@ -119,6 +112,9 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return ResponsiveScaffold(
+      header: ChunkyHeader(
+        onBack: () => Navigator.of(context).pop(),
+      ),
       body: FutureBuilder<_DashboardData>(
         future: _future,
         builder: (context, snap) {

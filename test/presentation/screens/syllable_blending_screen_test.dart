@@ -4,6 +4,7 @@ import 'package:mocco/domain/entities/word_entity.dart';
 import 'package:mocco/presentation/screens/blending/syllable_blending_screen.dart';
 import 'package:mocco/presentation/widgets/blending/syllable_card.dart';
 import 'package:mocco/presentation/widgets/blending/word_slot.dart';
+import 'package:mocco/presentation/widgets/buttons/bubble_icon_button.dart';
 
 void main() {
   testWidgets('SyllableBlendingScreen renders slots, icon and syllable cards', (tester) async {
@@ -49,9 +50,9 @@ void main() {
     await tester.tap(find.widgetWithText(SyllableCard, 'ku'));
     await tester.pump();
 
-    // Child keeps control — tap Lanjut Latihan on celebration banner (no auto-advance)
+    // Child keeps control — tap 3D Next Button on celebration dialog (no auto-advance)
     await tester.pump(const Duration(milliseconds: 500));
-    await tester.tap(find.text('Lanjut Latihan'));
+    await tester.tap(find.byType(BubbleIconButton).last);
     await tester.pump();
 
     expect(completed, isTrue);

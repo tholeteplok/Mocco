@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive_ce/hive.dart';
 import '../constants/app_assets.dart';
 
 /// Centralized Sound & Audio Service for Mocco (V7, V8, V14, V31, V34)
@@ -9,6 +10,9 @@ class SoundPlayer {
     _initAudioContext();
   }
   static final SoundPlayer instance = SoundPlayer._();
+
+  static const String _muteKey = '__system_mute';
+  static const String _boxName = 'mocco_mastery_box';
 
   final AudioPlayer _sfxPlayer = AudioPlayer();
   final AudioPlayer _sfxFastPlayer = AudioPlayer();
@@ -22,6 +26,11 @@ class SoundPlayer {
   bool get isMuted => _isMuted;
   bool _isBgmActive = false;
   bool get isBgmActive => _isBgmActive;
+
+  static const double _bgmDefaultVolume = 0.80;
+  static const double _bgmDuckedVolume = 0.25;
+
+  bool _isBgmTransitioning = false;
 
   void _initAudioContext() {
     try {
@@ -42,12 +51,6 @@ class SoundPlayer {
           ),
         ),
       );
-      // Fail-safe auto-loop listener jika native platform menyelesaikan playback
-      _bgmPlayer.onPlayerComplete.listen((_) {
-        if (!_isMuted && _isBgmActive) {
-          playBgmMap();
-        }
-      });
       // Pulihkan volume BGM setelah voice instruction/praise selesai berbicara
       _voicePlayer.onPlayerComplete.listen((_) {
         duckBgm(false);
@@ -61,7 +64,7 @@ class SoundPlayer {
     _isMuted = muted;
     try {
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
-      await _bgmPlayer.setVolume(0.3);
+      await _bgmPlayer.setVolume(_bgmDefaultVolume);
     } catch (e) {
       debugPrint('BGM init configuration error: $e');
     }
@@ -71,14 +74,38 @@ class SoundPlayer {
     } catch (e) {
       debugPrint('Audio preload fallback: $e');
     }
+    syncMuteFromStorage();
   }
 
   void toggleMute() {
     setMuted(!_isMuted);
   }
 
-  void setMuted(bool muted) {
+  void _persistMuteState(bool muted) {
+    try {
+      if (Hive.isBoxOpen(_boxName)) {
+        Hive.box(_boxName).put(_muteKey, muted);
+      }
+    } catch (_) {}
+  }
+
+  void syncMuteFromStorage() {
+    try {
+      if (Hive.isBoxOpen(_boxName)) {
+        final box = Hive.box(_boxName);
+        final saved = box.get(_muteKey) as bool?;
+        if (saved != null && saved != _isMuted) {
+          setMuted(saved, persist: false);
+        }
+      }
+    } catch (_) {}
+  }
+
+  void setMuted(bool muted, {bool persist = true}) {
     _isMuted = muted;
+    if (persist) {
+      _persistMuteState(muted);
+    }
     if (_isMuted) {
       _sfxPlayer.stop();
       _sfxFastPlayer.stop();
@@ -148,32 +175,62 @@ class SoundPlayer {
   /// Plays tactile mute click
   Future<void> playMuteClick() => _playSfx(AppAssets.sfxMuteClick, fast: true);
 
-  /// BGM Controls (Map/Home Only, Loop, Volume 0.3)
+  /// Plays welcoming intro jingle for Splash Screen
+  Future<void> playIntro() => _playSfx(AppAssets.sfxIntro);
+
+  /// Plays celebratory level up fanfare for LevelUpDialog
+  Future<void> playLevelUp() async {
+    if (_isMuted) return;
+    _lastSuccessPlayTime = DateTime.now();
+    try {
+      await _celebrationPlayer.stop();
+      await _celebrationPlayer.play(
+        AssetSource(AppAssets.sfxLevelUp.replaceFirst('assets/', '')),
+      );
+    } catch (e) {
+      debugPrint('Level up play error: $e');
+    }
+  }
+
+  /// BGM Controls (Map/Home Only, Loop, Volume 0.80)
+  /// Menggunakan Smooth Resume dan concurrency guard agar tidak crash di native MediaPlayer
+  /// saat berpindah halaman secara cepat.
   Future<void> playBgmMap() async {
     _isBgmActive = true;
-    if (_isMuted) return;
+    if (_isMuted || _isBgmTransitioning) return;
+    _isBgmTransitioning = true;
     try {
+      // Selalu pastikan volume BGM kembali ke volume default (memulihkan dari ducking yang tertahan)
+      await _bgmPlayer.setVolume(_bgmDefaultVolume);
+      if (_bgmPlayer.state == PlayerState.playing) {
+        return;
+      }
+      if (_bgmPlayer.state == PlayerState.paused) {
+        await _bgmPlayer.resume();
+        return;
+      }
+      // Jika stopped, completed, atau belum pernah diputar
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
-      await _bgmPlayer.setVolume(0.3);
-      await _bgmPlayer.stop();
       await _bgmPlayer.play(AssetSource(AppAssets.bgmMapHome.replaceFirst('assets/', '')));
     } catch (e) {
-      debugPrint('BGM play error: $e');
+      debugPrint('BGM play/resume error: $e');
+    } finally {
+      _isBgmTransitioning = false;
     }
   }
 
   Future<void> stopBgm() async {
     _isBgmActive = false;
     try {
-      await _bgmPlayer.stop();
+      await _bgmPlayer.pause();
     } catch (e) {
-      debugPrint('BGM stop error: $e');
+      debugPrint('BGM pause error: $e');
     }
   }
 
   Future<void> duckBgm(bool duck) async {
     try {
-      await _bgmPlayer.setVolume(duck ? 0.12 : 0.3);
+      await _bgmPlayer.setVolume(duck ? _bgmDuckedVolume : _bgmDefaultVolume);
     } catch (e) {
       debugPrint('BGM duck error: $e');
     }

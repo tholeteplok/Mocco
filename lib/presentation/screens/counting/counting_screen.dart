@@ -16,6 +16,7 @@ import '../../widgets/cards/flashcard_answer.dart';
 import '../../widgets/counting/counting_basket.dart';
 import '../../widgets/counting/counting_floating_area.dart';
 import '../../widgets/stage/diorama_stage.dart';
+import '../../widgets/dialogs/level_up_dialog.dart';
 import '../../widgets/feedback/celebration_banner.dart';
 import '../../widgets/headers/chunky_header.dart';
 import '../../widgets/headers/responsive_scaffold.dart';
@@ -137,14 +138,25 @@ class _CountingScreenState extends State<CountingScreen> {
       _sessionCorrect++;
       // Correct! Child keeps full control — no auto-advance (v2.0 dopamine loop).
       setState(() => _isAnswerCorrect = true);
-      SoundPlayer.instance.playCelebration();
-      CelebrationPopup.show(
-        context: context,
-        title: 'Luar Biasa!',
-        subtitle: 'Kamu berhasil menghitung dengan benar!',
-        buttonText: _currentStep < widget.totalSteps ? 'Lanjut' : 'Selesai',
-        onNextPressed: _advanceToNext,
-      );
+      if (_currentStep < widget.totalSteps) {
+        SoundPlayer.instance.playCelebration();
+        CelebrationPopup.show(
+          context: context,
+          title: 'Luar Biasa!',
+          subtitle: 'Kamu berhasil menghitung dengan benar!',
+          buttonText: 'Lanjut',
+          onNextPressed: _advanceToNext,
+        );
+      } else {
+        final isZoneEnd = _effectiveTargetNumber == 10;
+        LevelUpDialog.show(
+          context: context,
+          milestoneType: isZoneEnd
+              ? LevelMilestoneType.zoneAngka
+              : LevelMilestoneType.standard,
+          onContinue: _advanceToNext,
+        );
+      }
     } else {
       // Soft retry - anti frustration (V0.4)
       SoundPlayer.instance.playSoftRetry();
