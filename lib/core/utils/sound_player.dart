@@ -32,25 +32,31 @@ class SoundPlayer {
 
   bool _isBgmTransitioning = false;
 
+  static final AudioContext _appAudioContext = AudioContext(
+    android: const AudioContextAndroid(
+      isSpeakerphoneOn: true,
+      stayAwake: false,
+      contentType: AndroidContentType.music,
+      usageType: AndroidUsageType.game,
+      audioFocus: AndroidAudioFocus.none,
+    ),
+    iOS: AudioContextIOS(
+      category: AVAudioSessionCategory.playback,
+      options: const {
+        AVAudioSessionOptions.mixWithOthers,
+      },
+    ),
+  );
+
   void _initAudioContext() {
     try {
-      AudioPlayer.global.setAudioContext(
-        AudioContext(
-          android: const AudioContextAndroid(
-            isSpeakerphoneOn: true,
-            stayAwake: false,
-            contentType: AndroidContentType.music,
-            usageType: AndroidUsageType.game,
-            audioFocus: AndroidAudioFocus.gainTransientMayDuck,
-          ),
-          iOS: AudioContextIOS(
-            category: AVAudioSessionCategory.playback,
-            options: const {
-              AVAudioSessionOptions.mixWithOthers,
-            },
-          ),
-        ),
-      );
+      AudioPlayer.global.setAudioContext(_appAudioContext);
+      // Auto-loop fail-safe: pulihkan pemutaran jika native platform mencapai akhir lagu
+      _bgmPlayer.onPlayerComplete.listen((_) {
+        if (!_isMuted && _isBgmActive) {
+          _syncBgm();
+        }
+      });
       // Pulihkan volume BGM setelah voice instruction/praise selesai berbicara
       _voicePlayer.onPlayerComplete.listen((_) {
         duckBgm(false);
@@ -60,8 +66,21 @@ class SoundPlayer {
     }
   }
 
+  Future<void> _applyPerPlayerAudioContext() async {
+    try {
+      await _bgmPlayer.setAudioContext(_appAudioContext);
+      await _celebrationPlayer.setAudioContext(_appAudioContext);
+      await _voicePlayer.setAudioContext(_appAudioContext);
+      await _sfxPlayer.setAudioContext(_appAudioContext);
+      await _sfxFastPlayer.setAudioContext(_appAudioContext);
+    } catch (e) {
+      debugPrint('Error applying per-player audio context: $e');
+    }
+  }
+
   Future<void> init({bool muted = false}) async {
     _isMuted = muted;
+    await _applyPerPlayerAudioContext();
     try {
       await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer.setVolume(_bgmDefaultVolume);
@@ -111,12 +130,8 @@ class SoundPlayer {
       _sfxFastPlayer.stop();
       _celebrationPlayer.stop();
       _voicePlayer.stop();
-      _bgmPlayer.pause();
-    } else {
-      if (_isBgmActive) {
-        _bgmPlayer.resume().catchError((_) => playBgmMap());
-      }
     }
+    _syncBgm();
   }
 
   Future<void> _playSfx(String path, {bool fast = false}) async {
@@ -192,40 +207,54 @@ class SoundPlayer {
     }
   }
 
-  /// BGM Controls (Map/Home Only, Loop, Volume 0.80)
-  /// Menggunakan Smooth Resume dan concurrency guard agar tidak crash di native MediaPlayer
-  /// saat berpindah halaman secara cepat.
-  Future<void> playBgmMap() async {
-    _isBgmActive = true;
-    if (_isMuted || _isBgmTransitioning) return;
+  /// State Synchronization Mutex untuk BGM.
+  /// Menjamin konvergensi state dan auto-recovery tanpa race condition saat
+  /// tombol selesai/lanjut ditekan secara cepat.
+  Future<void> _syncBgm() async {
+    if (_isBgmTransitioning) return;
     _isBgmTransitioning = true;
     try {
-      // Selalu pastikan volume BGM kembali ke volume default (memulihkan dari ducking yang tertahan)
-      await _bgmPlayer.setVolume(_bgmDefaultVolume);
-      if (_bgmPlayer.state == PlayerState.playing) {
-        return;
+      while (true) {
+        final desiredPlay = _isBgmActive && !_isMuted;
+        if (desiredPlay) {
+          // Pulihkan volume BGM (memulihkan dari ducking yang tertahan)
+          await _bgmPlayer.setVolume(_bgmDefaultVolume);
+          if (_bgmPlayer.state != PlayerState.playing) {
+            await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
+            await _bgmPlayer.stop();
+            await _bgmPlayer.play(
+              AssetSource(AppAssets.bgmMapHome.replaceFirst('assets/', '')),
+            );
+          }
+        } else {
+          if (_bgmPlayer.state == PlayerState.playing) {
+            await _bgmPlayer.stop();
+          }
+        }
+
+        // Cek apakah ada perubahan status yang masuk saat operasi async di atas berlangsung
+        final updatedDesired = _isBgmActive && !_isMuted;
+        final isCurrentlyPlaying = _bgmPlayer.state == PlayerState.playing;
+        if (updatedDesired == isCurrentlyPlaying) {
+          break; // State telah konvergen sempurna
+        }
       }
-      if (_bgmPlayer.state == PlayerState.paused) {
-        await _bgmPlayer.resume();
-        return;
-      }
-      // Jika stopped, completed, atau belum pernah diputar
-      await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
-      await _bgmPlayer.play(AssetSource(AppAssets.bgmMapHome.replaceFirst('assets/', '')));
     } catch (e) {
-      debugPrint('BGM play/resume error: $e');
+      debugPrint('BGM sync error: $e');
     } finally {
       _isBgmTransitioning = false;
     }
   }
 
+  /// BGM Controls (Map/Home Only, Loop, Volume 0.80)
+  Future<void> playBgmMap() async {
+    _isBgmActive = true;
+    await _syncBgm();
+  }
+
   Future<void> stopBgm() async {
     _isBgmActive = false;
-    try {
-      await _bgmPlayer.pause();
-    } catch (e) {
-      debugPrint('BGM pause error: $e');
-    }
+    await _syncBgm();
   }
 
   Future<void> duckBgm(bool duck) async {

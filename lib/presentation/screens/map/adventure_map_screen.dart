@@ -129,11 +129,11 @@ class _AdventureMapScreenState extends State<AdventureMapScreen> {
       await HiveMasteryLocalDataSource().setGlobalUnlockedIndex(nextIndex);
       if (mounted) {
         setState(() => _unlockedIndex = nextIndex);
-        SoundPlayer.instance.playSuccess();
+        SoundPlayer.instance.playStarUnlock();
         _scrollToActiveNode(animate: true);
       }
     } else {
-      SoundPlayer.instance.playSuccess();
+      SoundPlayer.instance.playStarUnlock();
     }
   }
 
