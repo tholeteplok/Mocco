@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 /// Centralized typography for Mocco Design System (v2.0)
-/// - Andika for learning display & tracing
-/// - Nunito for UI interface & feedback
+/// - Andika for learning display & tracing (local offline font asset)
+/// - Nunito for UI interface & feedback (local offline font asset)
+/// - Momentz for brand title (local offline font asset)
 abstract final class AppTypography {
   /// Display for letters and numbers (120 - 200sp)
   static TextStyle learningDisplay({
     double fontSize = 140.0,
     Color color = AppColors.textPrimary,
   }) {
-    return GoogleFonts.andika(
+    return TextStyle(
+      fontFamily: 'Andika',
       fontSize: fontSize,
       fontWeight: FontWeight.bold,
       color: color,
@@ -24,7 +25,8 @@ abstract final class AppTypography {
     double fontSize = 28.0,
     Color color = AppColors.textPrimary,
   }) {
-    return GoogleFonts.nunito(
+    return TextStyle(
+      fontFamily: 'Nunito',
       fontSize: fontSize,
       fontWeight: FontWeight.w800,
       color: color,
@@ -36,7 +38,8 @@ abstract final class AppTypography {
     double fontSize = 22.0,
     Color color = AppColors.textPrimary,
   }) {
-    return GoogleFonts.nunito(
+    return TextStyle(
+      fontFamily: 'Nunito',
       fontSize: fontSize,
       fontWeight: FontWeight.w800,
       color: color,
@@ -48,7 +51,8 @@ abstract final class AppTypography {
     double fontSize = 20.0,
     Color color = AppColors.textPrimary,
   }) {
-    return GoogleFonts.nunito(
+    return TextStyle(
+      fontFamily: 'Nunito',
       fontSize: fontSize,
       fontWeight: FontWeight.w700,
       color: color,
@@ -60,7 +64,8 @@ abstract final class AppTypography {
     double fontSize = 16.0,
     Color color = AppColors.textPrimary,
   }) {
-    return GoogleFonts.nunito(
+    return TextStyle(
+      fontFamily: 'Nunito',
       fontSize: fontSize,
       fontWeight: FontWeight.w600,
       color: color,

@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_ce/hive.dart';
 import '../constants/app_assets.dart';
 
@@ -145,15 +146,22 @@ class SoundPlayer {
     }
   }
 
-  /// Plays tactile pop sound for button clicks (V8)
-  Future<void> playPop() => _playSfx(AppAssets.sfxPopWood, fast: true);
+  /// Plays tactile pop sound and light haptic impact for button clicks (V8, DS 2.0)
+  Future<void> playPop() async {
+    HapticFeedback.lightImpact();
+    await _playSfx(AppAssets.sfxPopWood, fast: true);
+  }
 
-  /// Plays squish sound when dragging an object (V16)
-  Future<void> playSquish() => _playSfx(AppAssets.sfxSquish, fast: true);
+  /// Plays squish sound and selection click haptic when dragging an object (V16, DS 2.0)
+  Future<void> playSquish() async {
+    HapticFeedback.selectionClick();
+    await _playSfx(AppAssets.sfxSquish, fast: true);
+  }
 
-  /// Plays success celebration chime (V14)
+  /// Plays success celebration chime and medium haptic impact (V14, DS 2.0)
   /// Menggunakan dedicated _celebrationPlayer agar tidak pernah terpotong SFX tombol
   Future<void> playSuccess() async {
+    HapticFeedback.mediumImpact();
     if (_isMuted) return;
     _lastSuccessPlayTime = DateTime.now();
     try {
@@ -169,17 +177,23 @@ class SoundPlayer {
   /// 2. Menunggu sampai nada lonceng selesai + jeda nafas natural 150 ms (~1,38 detik total)
   /// 3. Suara pujian maskot acak ("Hebat!", "Pintar sekali!", "Bagus!") dengan auto BGM-ducking
   Future<void> playCelebration({Duration gap = const Duration(milliseconds: 150)}) async {
-    if (_isMuted) return;
     await playSuccess();
+    if (_isMuted) return;
     await Future.delayed(const Duration(milliseconds: 1230) + gap);
     await playPraise();
   }
 
-  /// Plays soft gentle retry sound (V0.4, no harsh buzzer)
-  Future<void> playSoftRetry() => _playSfx(AppAssets.sfxSoftRetry);
+  /// Plays soft gentle retry sound and subtle selection click (V0.4, no harsh buzzer)
+  Future<void> playSoftRetry() async {
+    HapticFeedback.selectionClick();
+    await _playSfx(AppAssets.sfxSoftRetry);
+  }
 
-  /// Plays star unlock ding
-  Future<void> playStarUnlock() => _playSfx(AppAssets.sfxStarUnlock);
+  /// Plays star unlock ding and light haptic impact
+  Future<void> playStarUnlock() async {
+    HapticFeedback.lightImpact();
+    await _playSfx(AppAssets.sfxStarUnlock);
+  }
 
   /// Plays soft card flip
   Future<void> playCardFlip() => _playSfx(AppAssets.sfxCardFlip, fast: true);
@@ -193,8 +207,9 @@ class SoundPlayer {
   /// Plays welcoming intro jingle for Splash Screen
   Future<void> playIntro() => _playSfx(AppAssets.sfxIntro);
 
-  /// Plays celebratory level up fanfare for LevelUpDialog
+  /// Plays celebratory level up fanfare and medium haptic impact for LevelUpDialog
   Future<void> playLevelUp() async {
+    HapticFeedback.mediumImpact();
     if (_isMuted) return;
     _lastSuccessPlayTime = DateTime.now();
     try {

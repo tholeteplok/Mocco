@@ -90,3 +90,11 @@ flutter:
     - family: Momentz
       fonts:
         - asset: assets/fonts/Momentz.ttf
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito.ttf
+    - family: Andika
+      fonts:
+        - asset: assets/fonts/Andika-Regular.ttf
+        - asset: assets/fonts/Andika-Bold.ttf
+          weight: 700

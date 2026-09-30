@@ -51,7 +51,7 @@
 * **Custom Graphics & Tracing**: Flutter `CustomPainter` dengan algoritma kalkulasi *Point Proximity & Stroke Progress Tracking*
 * **Sound System**: Procedural synthetic sound generator & Native Indonesian voice audio clips (`SoundPlayer`)
 * **Design System**: Fully centralized design tokens (`AppColors`, `AppSpacing`, `AppTypography`, `ResponsiveHelper`)
-* **Testing**: Comprehensive Widget & Unit Test Suite (35+ automated tests)
+* **Testing**: Comprehensive Widget & Unit Test Suite (48 automated tests, 100% pass)
 
 ```
 lib/
@@ -82,7 +82,7 @@ lib/
 
 ### Run Automated Tests
 ```bash
-# Menjalankan seluruh 35+ automated unit & widget tests
+# Menjalankan seluruh 48 automated unit & widget tests (100% pass)
 flutter test
 ```
 
@@ -108,5 +108,9 @@ Dokumentasi lengkap mengenai filosofi psikologi balita, panduan geometri kompone
 
 ---
 
-## 7. License
-Mocco is developed under proprietary educational license. All rights reserved.
+## 7. License & Compliance / Lisensi & Kepatuhan
+
+* **License**: Mocco is open source software licensed under the **[MIT License](LICENSE)**.
+* **Third-Party Fonts**: Bundled under the **SIL Open Font License 1.1** (see [LICENSE](LICENSE)).
+* **Privacy Policy**: 100% offline-first & zero-data-collection policy compliant with COPPA and Google Play Families Policy (see **[PRIVACY_POLICY.md](PRIVACY_POLICY.md)**).
+* **Store Submission Checklist**: Complete guide for Google Play Console and App Store compliance (see **[STORE_COMPLIANCE.md](STORE_COMPLIANCE.md)**).

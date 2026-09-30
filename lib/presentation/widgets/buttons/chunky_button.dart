@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/tokens/app_colors.dart';
 import '../../../core/tokens/app_spacing.dart';
 import '../../../core/tokens/app_typography.dart';
+import '../../../core/utils/sound_player.dart';
 
 /// Tactile 2.5D Toy Button for Mocco (V6, V8, V12)
 /// Supports:
@@ -45,6 +46,7 @@ class _ChunkyButtonState extends State<ChunkyButton> {
   void _handleTapDown(TapDownDetails _) {
     if (widget.onPressed == null) return;
     setState(() => _isPressed = true);
+    SoundPlayer.instance.playPop();
   }
 
   void _handleTapUp(TapUpDetails _) {
