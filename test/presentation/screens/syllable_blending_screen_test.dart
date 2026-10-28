@@ -57,4 +57,56 @@ void main() {
 
     expect(completed, isTrue);
   });
+
+  testWidgets('SyllableBlendingScreen handles duplicate syllable words like susu correctly', (tester) async {
+    const susuWord = WordEntity(
+      id: 'susu',
+      word: 'susu',
+      syllable1: 'su',
+      syllable2: 'su',
+      icon: Icons.emoji_food_beverage_rounded,
+    );
+
+    bool completed = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SyllableBlendingScreen(
+          words: const [susuWord],
+          onCompleted: () => completed = true,
+        ),
+      ),
+    );
+
+    // Verify 2 syllable cards with "su" are displayed
+    final suCards = find.widgetWithText(SyllableCard, 'su');
+    expect(suCards, findsNWidgets(2));
+
+    // Tap the first "su" card
+    await tester.tap(suCards.first);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Verify Slot 1 has "su"
+    expect(
+      find.descendant(of: find.byType(WordSlot), matching: find.text('su')),
+      findsOneWidget,
+    );
+
+    // Tap the second "su" card
+    await tester.tap(suCards.last);
+    await tester.pump();
+
+    // Verify both word slots now contain "su"
+    expect(
+      find.descendant(of: find.byType(WordSlot), matching: find.text('su')),
+      findsNWidgets(2),
+    );
+
+    // Dismiss celebration modal by tapping next button
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.byType(BubbleIconButton).last);
+    await tester.pump();
+
+    expect(completed, isTrue);
+  });
 }

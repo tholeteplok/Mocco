@@ -43,8 +43,11 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
   late final List<WordEntity> _words;
   int _currentIndex = 0;
 
-  String? _slot1;
-  String? _slot2;
+  int? _slot1OptionIndex;
+  int? _slot2OptionIndex;
+
+  String? get _slot1 => _slot1OptionIndex != null ? _options[_slot1OptionIndex!] : null;
+  String? get _slot2 => _slot2OptionIndex != null ? _options[_slot2OptionIndex!] : null;
   late List<String> _options;
 
   bool _isSuccess = false;
@@ -83,8 +86,8 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
   }
 
   void _setupCurrentWord() {
-    _slot1 = null;
-    _slot2 = null;
+    _slot1OptionIndex = null;
+    _slot2OptionIndex = null;
     _isSuccess = false;
     _isLockInput = false;
     _currentWordAttempts = 0;
@@ -95,16 +98,17 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
     SoundPlayer.instance.playWord(_currentWord.word);
   }
 
-  void _handleSyllableTapped(String syllable) {
+  void _handleSyllableTapped(int optionIndex) {
     if (_isLockInput || _isSuccess) return;
 
+    final syllable = _options[optionIndex];
     SoundPlayer.instance.playSyllable(syllable);
 
     setState(() {
-      if (_slot1 == null) {
-        _slot1 = syllable;
-      } else {
-        _slot2 ??= syllable;
+      if (_slot1OptionIndex == null) {
+        _slot1OptionIndex = optionIndex;
+      } else if (_slot2OptionIndex == null && _slot1OptionIndex != optionIndex) {
+        _slot2OptionIndex = optionIndex;
       }
     });
 
@@ -179,8 +183,8 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
       _activeTimers.add(Timer(const Duration(milliseconds: 700), () {
         if (!mounted) return;
         setState(() {
-          _slot1 = null;
-          _slot2 = null;
+          _slot1OptionIndex = null;
+          _slot2OptionIndex = null;
           _isLockInput = false;
         });
       }));
@@ -192,9 +196,9 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
     SoundPlayer.instance.playPop();
     setState(() {
       if (slotIndex == 1) {
-        _slot1 = null;
+        _slot1OptionIndex = null;
       } else {
-        _slot2 = null;
+        _slot2OptionIndex = null;
       }
     });
   }
@@ -326,20 +330,21 @@ class _SyllableBlendingScreenState extends State<SyllableBlendingScreen>
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.space16),
             child: Row(
-              children: _options.map((syl) {
-                // Determine if this specific option chip is currently placed in a slot
-                final isUsed = (_slot1 == syl) || (_slot2 == syl && _slot1 != syl);
+              children: List.generate(_options.length, (index) {
+                final syl = _options[index];
+                // Determine if this specific option chip (by index) is placed in a slot
+                final isUsed = _slot1OptionIndex == index || _slot2OptionIndex == index;
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: SyllableCard(
                       syllable: syl,
                       isUsed: isUsed,
-                      onTap: () => _handleSyllableTapped(syl),
+                      onTap: () => _handleSyllableTapped(index),
                     ),
                   ),
                 );
-              }).toList(),
+              }),
             ),
           ),
                     ],

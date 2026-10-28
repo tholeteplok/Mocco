@@ -32,7 +32,12 @@ void main() {
       final options = WordCatalog.generateSyllableOptions(susu, random: Random(42));
 
       expect(options.length, equals(4));
-      expect(options.contains(susu.syllable1), isTrue);
+      // Suku kata kembar "su" harus muncul tepat 2 kali
+      expect(options.where((s) => s == 'su').length, equals(2));
+      // 2 opsi lainnya harus berupa distraktor unik yang bukan "su"
+      final distractors = options.where((s) => s != 'su').toList();
+      expect(distractors.length, equals(2));
+      expect(distractors.toSet().length, equals(2));
     });
   });
 }

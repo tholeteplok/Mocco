@@ -83,9 +83,10 @@ class WordCatalog {
   ];
 
   /// Generates 4 syllable options containing the required target syllables and distractors.
+  /// For words with duplicate syllables (e.g. "susu"), generates exactly two of that syllable.
   static List<String> generateSyllableOptions(WordEntity word, {Random? random}) {
     final rng = random ?? Random();
-    final options = <String>{word.syllable1, word.syllable2};
+    final options = <String>[word.syllable1, word.syllable2];
 
     final pool = List<String>.from(allPoolSyllables)..shuffle(rng);
     for (final syl in pool) {
@@ -95,7 +96,7 @@ class WordCatalog {
       if (options.length >= 4) break;
     }
 
-    final list = options.toList()..shuffle(rng);
-    return list;
+    options.shuffle(rng);
+    return options;
   }
 }
